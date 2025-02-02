@@ -9,11 +9,11 @@ module rom(
     output logic [31:0] imm
     );
 
-    logic[63:0] machines[0:255] = {
-        machine::mov(15, 2, 0, 33'h1_0000_0000 + 15),
+    logic [63:0] machines[0:255] = {
+        machine::mov(4'hf, 6'h2, 0, 33'h1_0000_0000 + 15),
         machine::mov(15, 33, 0, 33'h1_0000_0000 + 4),
         machine::add(34, 32, 33, 0),
-        machine::jmp(256, 0),
+        machine::jmp(0, 33'h1_0000_0000 + 3),
     };
 
     always_comb begin

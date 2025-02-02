@@ -2,9 +2,9 @@
 
 .global func, main
 
-func:
-    ret
-
 main:
     call func
+    ret
+
+func:
     ret

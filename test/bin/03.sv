@@ -9,12 +9,12 @@ module rom(
     output logic [31:0] imm
     );
 
-    logic[63:0] machines[0:255] = {
-        machine::jmp(256, 0),
-        machine::jmp(0, 0),
-        machine::jmp(1, 0),
-        machine::jmp(1, 0),
-        machine::jmp(2, 0),
+    logic [63:0] machines[0:255] = {
+        machine::jmp(func1, 0),
+        machine::jmp(0, 33'h1_0000_0000 + 1),
+        machine::jmp(func2, 0),
+        machine::jmp(0, 33'h1_0000_0000 + 1),
+        machine::jmp(0, 33'h1_0000_0000 + 4),
     };
 
     always_comb begin

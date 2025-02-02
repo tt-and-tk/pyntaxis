@@ -2,13 +2,13 @@
 
 .global func1, func2, main
 
-func2:
+main:
+    call func1
     ret
 
 func1:
     call func2
     ret
 
-main:
-    call func1
+func2:
     ret
