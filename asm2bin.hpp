@@ -25,15 +25,15 @@ const std::map<std::string, command_arg_t> commands = {
     {"nop"  ,  {0, {                                                                  }, false}},
 
     // 演算系(P系)
-    {"and"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
-    {"or"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
-    {"xor"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
-    {"not"  ,  {2, {arg_t::REGISTER, arg_t::REGISTER,                  arg_t::RAW_DATA}, false}},
-    {"nand" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
-    {"add"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
-    {"sub"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
-    {"addi" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
-    {"subi" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
+    {"and"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false}},
+    {"or"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false}},
+    {"xor"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false}},
+    {"not"  ,  {2, {arg_t::REGISTER, arg_t::REGISTER,                                 }, false}},
+    {"nand" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false}},
+    {"add"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false}},
+    {"sub"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false}},
+    {"mul"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false}},
+    {"div"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
 
     // シフト系(S系)
     {"sll"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
@@ -60,6 +60,10 @@ const std::map<std::string, command_arg_t> commands = {
     {"wm"   ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
     {"brm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
     {"bwm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false}},
+
+    // 標準入出力系(IO系)
+    {"scan" ,  {1, {                                                   arg_t::REGISTER}, false}},
+    {"print",  {2, {arg_t::REGISTER,                                   arg_t::RAW_DATA}, false}},
 };
 
 // 引数タイプごとのビット数を返す

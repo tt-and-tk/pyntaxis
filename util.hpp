@@ -10,6 +10,9 @@ int str_find_first_of(const std::string &str, const char ch);     // 最初にch
 const std::string b2d(const std::string &bin);                    // 2進数を10進数に変換する
 const std::string o2d(const std::string &oct);                    // 8進数を10進数に変換する
 const std::string h2d(const std::string &hex);                    // 16進数を10進数に変換する
+void replace(                                                     // 文字列のうち，パターンに当てはまる部分を全て置換する
+    std::string &source, const std::string &pattern, const std::string &replacement
+);
 
 // 最初にchが出現する文字数を返す．なければ末尾までの文字数
 int str_find_first_of(const std::string &str, const char ch) {
@@ -76,4 +79,16 @@ const std::string h2d(const std::string &hex) {
     }
 
     return std::to_string(dec);
+}
+
+// 文字列のうち，パターンに当てはまる部分を全て置換する
+void replace(
+    std::string &source, const std::string &pattern, const std::string &replacement
+) {
+    std::size_t patternLength = pattern.length();
+    int position = 0;
+
+    while ((position = source.find(pattern)) != std::string::npos) {
+        source.replace(position, patternLength, replacement);
+    }
 }

@@ -4,6 +4,7 @@
 
 main:
     call func
+    call func
     ret
 
 func:
