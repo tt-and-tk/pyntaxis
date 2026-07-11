@@ -6,13 +6,16 @@ module rom_sv(
     );
     import machine_p::*;
 
-    localparam integer ROM_SIZE = 4;
+    localparam integer ROM_SIZE = 7;
 
     machine_t machines[0:ROM_SIZE - 1] = {
-        call(0, 33'h1_0000_0000 + 3),
-        call(0, 33'h1_0000_0000 + 3),
-        jmp(0, 33'h1_0000_0000 + 2),
-        ret()
+        scan(1),
+        print(1, 33'h1_0000_0000 + 0),
+        rm(4'hf, 1, 2, 0),
+        wm(4'hf, 1, 2, 0),
+        brm(4'hf, 1, 2, 3, 0),
+        bwm(4'hf, 1, 2, 3, 0),
+        jmp(0, 33'h1_0000_0000 + 6)
     };
 
     always_comb begin

@@ -6,18 +6,12 @@ module rom_sv(
     );
     import machine_p::*;
 
-    localparam integer ROM_SIZE = 10;
+    localparam integer ROM_SIZE = 4;
 
     machine_t machines[0:ROM_SIZE - 1] = {
-        mov(0, 0, 0, 33'h1_0000_0000 + 0),
-        call(0, 33'h1_0000_0000 + 4),
-        mov(0, 0, 0, 33'h1_0000_0000 + 1),
-        jmp(0, 33'h1_0000_0000 + 3),
-        mov(0, 0, 0, 33'h1_0000_0000 + 2),
-        call(0, 33'h1_0000_0000 + 8),
-        mov(0, 0, 0, 33'h1_0000_0000 + 3),
-        ret(),
-        mov(0, 0, 0, 33'h1_0000_0000 + 4),
+        call(0, 33'h1_0000_0000 + 2),
+        jmp(0, 33'h1_0000_0000 + 1),
+        call(0, 33'h1_0000_0000 + 2),
         ret()
     };
 

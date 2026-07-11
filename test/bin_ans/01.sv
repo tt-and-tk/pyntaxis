@@ -1,27 +1,25 @@
+`include "rom.svh"
 `include "machine.svh"
 
-module rom(
-    input  logic clk,
-    input  logic resetn,
-
-    input  logic [31:0] pc,
-    output logic [31:0] machine,
-    output logic [31:0] imm
+module rom_sv(
+    rom_read_if.slave rom_read
     );
+    import machine_p::*;
 
-    logic [63:0] machines[0:255] = {
-        machine::mov(15, 2, 0, 33'h1_0000_0000 + 15),
-        machine::mov(15, 33, 0, 33'h1_0000_0000 + 4),
-        machine::add(34, 32, 33, 0),
+    localparam integer ROM_SIZE = 4;
+
+    machine_t machines[0:ROM_SIZE - 1] = {
+        mov(4'hf, 6'h2, 0, 33'h1_0000_0000 + 15),
+        mov(15, 33, 0, 33'h1_0000_0000 + 4),
+        add(34, 32, 33),
+        jmp(0, 33'h1_0000_0000 + 3)
     };
 
     always_comb begin
-        if (pc >= 32'h100) begin
-            machine <= 32'b0;
-            imm <= 32'b0;
+        if (rom_read.pc >= ROM_SIZE) begin
+            rom_read.machine = nop();
         end else begin
-            machine <= machines[pc][63:32];
-            imm <= machines[pc][31:0];
+            rom_read.machine = machines[rom_read.pc];
         end
     end
 

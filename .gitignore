@@ -1,0 +1,4 @@
+*.exe
+review.md
+test/bin/
+.claude/settings.local.json
