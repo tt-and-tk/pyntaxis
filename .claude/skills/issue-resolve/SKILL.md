@@ -1,7 +1,7 @@
 ---
 name: issue-resolve
 description: GitHub issueに対応する。1issue=1回の実行で，複数リポジトリにまたがる修正もスキル内部で完結させる。「issue #Nに対応して」で起動。
-allowed-tools: Edit, Write, Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git checkout *) Bash(git pull) Bash(git branch -d *) Bash(git status *) Bash(git diff *) Bash(gh pr create *) Bash(gh pr edit *) Bash(gh api *) Bash(gh issue view *) Bash(claude -p --allowedTools "Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)" -- "*" > review.md)
+allowed-tools: Edit, Write, Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git checkout *) Bash(git pull) Bash(git branch -d *) Bash(git branch --show-current) Bash(git status *) Bash(git diff *) Bash(gh pr create *) Bash(gh pr edit *) Bash(gh api *) Bash(gh issue view *) Bash(claude -p --allowedTools "Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)" -- "*" > review.md)
 ---
 
 # 概要
