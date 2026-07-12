@@ -2,3 +2,5 @@
 review.md
 test/bin/
 .claude/settings.local.json
+.env
+.mcp.json
