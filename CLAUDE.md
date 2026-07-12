@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-PYNQ-Z2 上で動かす自作 CPU 向けのアセンブラ。`.asm` ファイルを読み込み、`machine.svh` の `machine_p` パッケージを使った SystemVerilog ROM 初期化コード (`.sv`) を出力する。
+PYNQ-Z2 上で動かす自作 CPU 向けのアセンブラ。アセンブリ言語「Pyntaxis」の `.pt` ファイルを読み込み、`machine.svh` の `machine_p` パッケージを使った SystemVerilog ROM 初期化コード (`.sv`) を出力する。
 
 ## ビルドとテスト
 
@@ -16,16 +16,16 @@ g++ -o asm2bin.exe asm2bin.cpp
 **テスト（`test/` ディレクトリで実行）:**
 ```
 cd test
-python test.py        # 正常系: test/asm/*.asm を全て変換し test/bin/ へ出力
-python test_err.py    # 異常系: test/asm_err/*.asm が全てエラーになることを確認
+python test.py        # 正常系: test/asm/*.pt を全て変換し test/bin/ へ出力
+python test_err.py    # 異常系: test/asm_err/*.pt が全てエラーになることを確認
 ```
 期待値は `test/bin_ans/` にある。
 
 **単体実行:**
 ```
-asm2bin.exe input.asm -o output.sv
-rem または（-o 省略時は input.sv が生成される）
-asm2bin.exe input.asm
+asm2bin.exe input.pt -bin output.sv
+rem または（-bin 省略時は input.sv が生成される）
+asm2bin.exe input.pt
 ```
 
 ## コードアーキテクチャ
@@ -38,7 +38,7 @@ asm2bin.exe input.asm
 
 ### アセンブル処理の流れ
 
-1. コマンドライン引数から `.asm` と出力 `.sv` パスを決定（`get_args`）
+1. コマンドライン引数から `.pt` と出力 `.sv` パスを決定（`get_args`）
 2. `read_global_line` で `.global` 行まで読み飛ばし、前置きの妥当性検証
 3. `get_function_names` で関数名一覧を収集（アドレスは `npos` で初期化）
 4. `assemble_body` で命令を 1 行ずつ変換。関数ラベル出現時にアドレスを確定（main を先頭 pc=0 から配置）、局所ラベル（`.` 始まり）は別表 `local_labels` に位置を記録。全関数の ret 有無も追跡
@@ -169,34 +169,34 @@ endmodule
 
 | ファイル | 内容 |
 |---|---|
-| `01.asm` | `mov`, `add`, `ret` の基本動作 |
-| `02.asm` | `call`, `ret` の基本的な関数呼び出し |
-| `03.asm` | 多段 `call`（2段以上のネスト） |
-| `04.asm` | 関数定義順が `.global` 宣言順と異なるケース |
-| `05.asm` | 同じ関数を2回 `call`（戻り先 pc が call ごとに異なること） |
-| `06.asm` | 複数の異なる関数を順次 `call` |
-| `07.asm` | 呼び出し深さ10段（多段呼び出し） |
-| `08.asm` | 再帰呼び出し（CALL/RET 命令でそのまま変換できる） |
-| `09.asm` | 呼び出し深さ11段（静的検査をしないため変換できる） |
-| `10.asm` | P系命令（`and`, `or`, `xor`, `not`, `nand`, `sub`, `mul`, `div`） |
-| `11.asm` | S系（`sll`, `srl`, `sla`, `sra`）、F系（`eq`, `ne`, `lt`, `gt`, `elt`, `egt`）、J系（`jmp`）。局所ラベルの前方/後方ジャンプ（F系の負オフセット含む） |
-| `12.asm` | M系（`rm`, `wm`, `brm`, `bwm`）、IO系（`scan`, `print`） |
+| `01.pt` | `mov`, `add`, `ret` の基本動作 |
+| `02.pt` | `call`, `ret` の基本的な関数呼び出し |
+| `03.pt` | 多段 `call`（2段以上のネスト） |
+| `04.pt` | 関数定義順が `.global` 宣言順と異なるケース |
+| `05.pt` | 同じ関数を2回 `call`（戻り先 pc が call ごとに異なること） |
+| `06.pt` | 複数の異なる関数を順次 `call` |
+| `07.pt` | 呼び出し深さ10段（多段呼び出し） |
+| `08.pt` | 再帰呼び出し（CALL/RET 命令でそのまま変換できる） |
+| `09.pt` | 呼び出し深さ11段（静的検査をしないため変換できる） |
+| `10.pt` | P系命令（`and`, `or`, `xor`, `not`, `nand`, `sub`, `mul`, `div`） |
+| `11.pt` | S系（`sll`, `srl`, `sla`, `sra`）、F系（`eq`, `ne`, `lt`, `gt`, `elt`, `egt`）、J系（`jmp`）。局所ラベルの前方/後方ジャンプ（F系の負オフセット含む） |
+| `12.pt` | M系（`rm`, `wm`, `brm`, `bwm`）、IO系（`scan`, `print`） |
 
 `test/asm_err/` にある異常系テストケース。`test/test_err.py` で一括実行できる（エラーが出ることを確認する）。
 
 | ファイル | 内容 |
 |---|---|
-| `13.asm` | 未定義関数の呼び出し → エラーになるべき |
-| `14.asm` | main 関数の欠如 → エラーになるべき |
-| `15.asm` | `.global` より前にコード（コメント以外）がある → エラーになるべき |
-| `16.asm` | `ret` を持たない関数がある → エラーになるべき |
-| `17.asm` | `.global` に宣言したが定義（ラベル）がない関数がある → エラーになるべき |
-| `18.asm` | 命令行にタブ文字がある → エラーになるべき |
-| `19.asm` | 引数が多すぎる（`add` に4引数）→ エラーになるべき |
-| `20.asm` | `call` に引数が2つある → エラーになるべき |
-| `21.asm` | 未定義の局所ラベルを参照している → エラーになるべき |
-| `22.asm` | 局所ラベルが重複定義されている → エラーになるべき |
-| `23.asm` | ジャンプ先がラベルでない（数値指定）→ エラーになるべき |
+| `13.pt` | 未定義関数の呼び出し → エラーになるべき |
+| `14.pt` | main 関数の欠如 → エラーになるべき |
+| `15.pt` | `.global` より前にコード（コメント以外）がある → エラーになるべき |
+| `16.pt` | `ret` を持たない関数がある → エラーになるべき |
+| `17.pt` | `.global` に宣言したが定義（ラベル）がない関数がある → エラーになるべき |
+| `18.pt` | 命令行にタブ文字がある → エラーになるべき |
+| `19.pt` | 引数が多すぎる（`add` に4引数）→ エラーになるべき |
+| `20.pt` | `call` に引数が2つある → エラーになるべき |
+| `21.pt` | 未定義の局所ラベルを参照している → エラーになるべき |
+| `22.pt` | 局所ラベルが重複定義されている → エラーになるべき |
+| `23.pt` | ジャンプ先がラベルでない（数値指定）→ エラーになるべき |
 
 ## Issue対応の徹底
 
