@@ -1,5 +1,5 @@
 """
-test/asm_err/*.asm を全て変換し，エラーが出ることを確認するテストスクリプト。
+test/asm_err/*.pt を全て変換し，エラーが出ることを確認するテストスクリプト。
 - 終了コードが非0、またはエラーメッセージが出力されることを「成功（エラー検出）」とする。
 - エラーが出なかった場合は「失敗（エラー未検出）」として報告する。
 """
@@ -19,7 +19,7 @@ def main():
         sys.exit(1)
 
     asm_files = sorted(
-        f for f in os.listdir(ASM_ERR_DIR) if f.endswith(".asm")
+        f for f in os.listdir(ASM_ERR_DIR) if f.endswith(".pt")
     )
 
     if not asm_files:
@@ -32,10 +32,10 @@ def main():
     with tempfile.TemporaryDirectory() as tmpdir:
         for asm_file in asm_files:
             asm_path = os.path.join(ASM_ERR_DIR, asm_file)
-            sv_path = os.path.join(tmpdir, asm_file.replace(".asm", ".sv"))
+            sv_path = os.path.join(tmpdir, asm_file.replace(".pt", ".sv"))
 
             result = subprocess.run(
-                [ASM2BIN, asm_path, "-b", sv_path],
+                [ASM2BIN, asm_path, "-bin", sv_path],
                 capture_output=True,
                 text=True,
             )

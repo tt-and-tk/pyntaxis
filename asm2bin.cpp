@@ -135,8 +135,8 @@ int assemble_asm_to_sv(int argc, char **argv) {
 }
 
 // コマンドライン引数を取得
-// -a: 必須引数．アセンブリファイル名．
-// -b: 出力ファイル名．省略した場合，アセンブリファイル名の拡張子を変更して同階層に出力される．
+// -pt: 必須引数．アセンブリファイル名．
+// -bin: 出力ファイル名．省略した場合，アセンブリファイル名の拡張子を変更して同階層に出力される．
 // 何も指定せずに引数を置いた場合，アセンブリファイル名と解釈される．
 void get_args(int argc, char **argv, args_t &args) {
     // 全ての引数でループ(コマンド名は飛ばす)
@@ -153,8 +153,8 @@ void get_args(int argc, char **argv, args_t &args) {
             arg = argv[i];
 
             // 指定されたパラメータを保存
-            if      (kind == "-a") args.asm_file_name = argv[i];
-            else if (kind == "-b") args.sv_file_name  = argv[i];
+            if      (kind == "-pt")  args.asm_file_name = argv[i];
+            else if (kind == "-bin") args.sv_file_name  = argv[i];
         }
         // 指定子の直後ではないなら
         else {
@@ -162,10 +162,10 @@ void get_args(int argc, char **argv, args_t &args) {
         }
     }
 
-    // アセンブリファイル名が .asm で終わっているか（短い名前での範囲外アクセスを防ぐ）
+    // アセンブリファイル名が .pt で終わっているか（短い名前での範囲外アクセスを防ぐ）
     const bool asm_name_ok =
-        args.asm_file_name.length() >= 4
-        && args.asm_file_name.substr(args.asm_file_name.length() - 4) == ".asm";
+        args.asm_file_name.length() >= 3
+        && args.asm_file_name.substr(args.asm_file_name.length() - 3) == ".pt";
 
     // 出力ファイル名が指定されていないなら，アセンブリ名の拡張子を .sv にして使う
     if (asm_name_ok && args.sv_file_name.empty()) {
@@ -174,8 +174,8 @@ void get_args(int argc, char **argv, args_t &args) {
 
         // 拡張子を更新
         args.sv_file_name.replace(
-            args.sv_file_name.length() - 3,  // 置換するのは後ろから三文字
-            3,      // 置換する文字数
+            args.sv_file_name.length() - 2,  // 置換するのは後ろから二文字
+            2,      // 置換する文字数
             "sv"    // 拡張子は「.sv」にする
         );
     }
@@ -189,9 +189,9 @@ void get_args(int argc, char **argv, args_t &args) {
     if (!asm_name_ok || !sv_name_ok) {
         // メッセージ出力
         std::cout << "args fail" << std::endl
-                  << "-a: asm file name. e.g. ~~.asm" << std::endl
+                  << "-pt: asm file name. e.g. ~~.pt" << std::endl
                   << "    actual: " << args.asm_file_name << std::endl
-                  << "-b: output file name. e.g. ~~.sv" << std::endl
+                  << "-bin: output file name. e.g. ~~.sv" << std::endl
                   << "    actual: " << args.sv_file_name << std::endl;
 
         // 後の処理でエラーになるよう，コマンドライン引数をクリア

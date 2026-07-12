@@ -1,5 +1,5 @@
 """
-test/asm/*.asm を全て変換して test/bin/ へ出力するテストスクリプト。
+test/asm/*.pt を全て変換して test/bin/ へ出力するテストスクリプト。
 変換に成功した件数と失敗した件数を報告する。
 bin_ans/ に期待値ファイルがなければ FAIL とする。
 """
@@ -19,7 +19,7 @@ def main():
     os.makedirs(BIN_DIR, exist_ok=True)
 
     asm_files = sorted(
-        f for f in os.listdir(ASM_DIR) if f.endswith(".asm")
+        f for f in os.listdir(ASM_DIR) if f.endswith(".pt")
     )
 
     if not asm_files:
@@ -33,12 +33,12 @@ def main():
 
     for asm_file in asm_files:
         asm_path = os.path.join(ASM_DIR, asm_file)
-        sv_name = asm_file.replace(".asm", ".sv")
+        sv_name = asm_file.replace(".pt", ".sv")
         sv_path = os.path.join(BIN_DIR, sv_name)
         ans_path = os.path.join(BIN_ANS_DIR, sv_name)
 
         result = subprocess.run(
-            [ASM2BIN, asm_path, "-b", sv_path],
+            [ASM2BIN, asm_path, "-bin", sv_path],
             capture_output=True,
             text=True,
         )
