@@ -61,7 +61,10 @@ static std::string function_name2line_num(                                // 関
 );
 static void output_footer(std::ofstream &sv_file);                       // svファイルのフッターを出力する
 
-const int MAX_LINE_NUM = 255;                     // 出力されるアセンブリプログラムの最大行数
+// 出力されるアセンブリプログラムの最大行数
+// ROM自体に固定容量は無く(ROM_SIZEはこの行数から自動算出する)，現行のROM読み出し回路(組合せ論理)が
+// LUT資源のみで安全に収まる範囲として設定したソフトウェア側の暫定上限(詳細は../specification/limitations.md)
+const int MAX_LINE_NUM = 4096;
 const char FUNC_REF_DELIM = '@';                  // 出力本体で関数参照を囲む区切り文字（命令名や数値との衝突を防ぐ）
 
 // 局所ラベル参照の仮文字列（プレースホルダ）
