@@ -7,8 +7,6 @@ description: GitHub issueに対応する。1issue=1回の実行で，複数リ�
 
 GitHub issueへの対応 (調査・ブランチ作成・修正・PR作成) を行う．粒度は1issue=1回の実行．対応が複数リポジトリにまたがる場合も，このスキル内で完結させる．
 
-このスキルが使用するツールの許可は，このリポジトリの`.claude/settings.json`で管理する(このファイルの`allowed-tools`には記載しない)．
-
 # 手順
 
 ## 1. issue内容の確認
