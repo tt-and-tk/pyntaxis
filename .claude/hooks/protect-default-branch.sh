@@ -13,7 +13,7 @@ fi
 current_branch="$(git branch --show-current 2>/dev/null || true)"
 default_branch="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##' || true)"
 if [ -z "$default_branch" ]; then
-  default_branch="$(git remote show origin 2>/dev/null | sed -n 's/^\s*HEAD branch:\s*//p')"
+  default_branch="$(git remote show origin 2>/dev/null | sed -n 's/^\s*HEAD branch:\s*//p' || true)"
 fi
 
 if [ -n "$current_branch" ] && [ -n "$default_branch" ] && [ "$current_branch" = "$default_branch" ]; then
