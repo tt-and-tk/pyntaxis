@@ -5,10 +5,10 @@ set -euo pipefail
 input="$(cat)"
 command="$(echo "$input" | jq -r '.tool_input.command // empty')"
 
-case "$command" in
-  git\ add*|git\ commit*) ;;
-  *) exit 0 ;;
-esac
+# git add/commit が複合コマンド(&&・;・|で連結)の途中にあっても検知できるよう，先頭一致ではなく単語境界での部分一致で判定する
+if ! printf '%s' "$command" | grep -qE '(^|[;&|`$(]|[[:space:]])git[[:space:]]+(add|commit)([[:space:]]|$)'; then
+  exit 0
+fi
 
 current_branch="$(git branch --show-current 2>/dev/null || true)"
 default_branch="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##' || true)"
