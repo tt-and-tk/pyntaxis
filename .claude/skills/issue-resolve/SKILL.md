@@ -1,11 +1,11 @@
 ---
 name: issue-resolve
-description: GitHub issueに対応する。1issue=1回の実行で，複数リポジトリにまたがる修正もスキル内部で完結させる。「issue #Nに対応して」で起動。
+description: GitHub issueに対応する。1issue=1回の実行(複数リポジトリにまたがる場合はリポジトリごとに別セッションでこのスキルを実行する)。「issue #Nに対応して」で起動。
 ---
 
 # 概要
 
-GitHub issueへの対応 (調査・ブランチ作成・修正・PR作成) を行う．粒度は1issue=1回の実行．対応が複数リポジトリにまたがる場合も，このスキル内で完結させる．
+GitHub issueへの対応 (調査・ブランチ作成・修正・PR作成) を行う．粒度は1issue=1回の実行．issueは1つのままでよいが，対応が複数リポジトリにまたがる場合は，リポジトリごとに別セッション(別のClaude Codeインスタンス)でこのスキルを実行する (詳細は手順4冒頭を参照)．
 
 # 手順
 
@@ -103,16 +103,21 @@ git push
 
 ## 6. マージ後の後始末
 
-マージ完了の報告を受けたら，issueがクローズされたことを確認し，各リポジトリのローカルを最新化してローカルブランチを削除する．  
+マージ完了の報告を受けたら，issueがクローズされたことを確認する．
 
 ```
 gh issue view <番号> --repo <owner>/<repo>
+```
+
+**4.1で`EnterWorktree`を使わなかった場合**，ローカルを最新化してローカルブランチを削除する．
+
+```
 git checkout <デフォルトブランチ>
 git pull
 git branch -d fix/issue-<番号>-<内容を表す短い語句>
 ```
 
-4.1で`EnterWorktree`を使った場合は，`ExitWorktree`(`remove`)で作業ディレクトリとブランチを削除する．
+**4.1で`EnterWorktree`を使った場合**，上記の代わりに`ExitWorktree`(`remove`)で作業ディレクトリとブランチをまとめて削除する(元のディレクトリに自動的に戻るため，`git checkout`は不要)．
 
 # 注意
 

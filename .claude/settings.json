@@ -8,6 +8,8 @@
       "Write(C:\\D\\program\\xilinx\\pynq-z2\\pc\\specification\\**)",
       "Edit(C:\\D\\program\\xilinx\\pynq-z2\\pc\\assembler\\**)",
       "Write(C:\\D\\program\\xilinx\\pynq-z2\\pc\\assembler\\**)",
+      "EnterWorktree",
+      "ExitWorktree",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
