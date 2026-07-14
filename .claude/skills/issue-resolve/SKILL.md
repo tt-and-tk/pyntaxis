@@ -1,11 +1,11 @@
 ---
 name: issue-resolve
-description: GitHub issueに対応する。1issue=1回の実行(複数リポジトリにまたがる場合はリポジトリごとに別セッションでこのスキルを実行する)。「issue #Nに対応して」で起動。
+description: GitHub issueに対応する。1issue=1回の実行。「issue #Nに対応して」で起動。
 ---
 
 # 概要
 
-GitHub issueへの対応 (調査・ブランチ作成・修正・PR作成) を行う．粒度は1issue=1回の実行．issueは1つのままでよいが，対応が複数リポジトリにまたがる場合は，リポジトリごとに別セッション(別のClaude Codeインスタンス)でこのスキルを実行する (詳細は手順4冒頭を参照)．
+GitHub issueへの対応 (調査・ブランチ作成・修正・PR作成) を行う．粒度は1issue=1回の実行．対応が複数リポジトリにまたがる場合の進め方は手順4冒頭を参照．
 
 # 手順
 
@@ -26,13 +26,13 @@ gh issue view <番号> --repo <owner>/<repo>
 
 ## 4. リポジトリごとの実装〜PR作成
 
-影響リポジトリごとに以下を行う．**複数リポジトリに影響する場合，1つのセッションで複数リポジトリを串刺しに編集しない．リポジトリごとに別セッション(別のClaude Codeインスタンス)を割り当て，そのリポジトリのプロジェクトで本スキルを個別に実行する．**issue自体は1つのままでよく，実装の実行単位だけをリポジトリごとに分ける．
+影響リポジトリごとに以下を行う．**複数リポジトリに影響する場合，1つのセッションで複数リポジトリを串刺しに編集しない．**このリポジトリでの対応が完了したら，他の影響リポジトリについては，対象リポジトリと該当issue番号を明示した上で，そのリポジトリのプロジェクトで本スキルを実行するようユーザーに依頼する(このセッションから直接他リポジトリを操作しない)．issue自体は1つのままでよく，実装の実行単位だけをリポジトリごとに分ける．
 
 ### 4.1 作業場所の準備
 
-同一リポジトリに対して複数issueを同時並行で対応する場合は，`EnterWorktree`(name: `fix/issue-<番号>-<内容を表す短い語句>`)で専用の作業ディレクトリとブランチを作成してから作業する．`EnterWorktree`はブランチ作成まで一体で行うため，**この場合は直後の`git checkout -b`によるブランチ作成コードブロックを実行しない**．単一issueのみを順番に対応する場合はworktreeを使わず，従来通り以下のコードブロックでブランチ作成のみ行う．
+`EnterWorktree`(name: `fix/issue-<番号>-<内容を表す短い語句>`)で専用の作業ディレクトリとブランチを作成してから作業する．`EnterWorktree`はブランチ作成まで一体で行うため，**この場合は直後の`git checkout -b`によるブランチ作成コードブロックを実行しない**．
 
-**ただしmypcは対象外とする．** Vivadoプロジェクトを含み，XPRファイルの絶対パス依存やキャッシュ生成コストがあるため，worktreeでの並行作業は行わず，従来通り単一ディレクトリで直列に作業する．
+**ただしVivadoプロジェクトを含むリポジトリの場合は対象外とする．** XPRファイルの絶対パス依存やキャッシュ生成コストがあるため，worktreeでの作業は行わず，従来通り単一ディレクトリで直列に作業する(以下のコードブロックでブランチ作成のみ行う)．
 
 ```
 git checkout <デフォルトブランチ>
@@ -73,7 +73,7 @@ PR作成時の`--body`に，closeキーワード (`Closes owner/repo#番号`) �
 レビュー結果の修正が他のプロジェクトにも及ぶ場合は，同じissueに対応する設定のブランチを切ってから対応する．  
 
 ```
-claude -p --allowedTools "Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)" --disallowedTools "Edit,Write,EnterWorktree,ExitWorktree,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git checkout:*),Bash(git pull),Bash(git branch -d:*),Bash(git branch --show-current),Bash(git branch),Bash(git log:*),Bash(git show:*),Bash(git remote -v),Bash(gh pr create:*),Bash(gh api repos/*/pulls/*/comments),Bash(gh api repos/*/issues/*/comments),Bash(gh issue create:*),Bash(claude -p:*)" -- "issue #<番号>(<owner>/<repo>)の対応について，git diffとソース全体のレビューを依頼する文言" > review.md
+claude -p --allowedTools "Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)" --disallowedTools "Edit,Write,EnterWorktree,ExitWorktree,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git checkout:*),Bash(git pull),Bash(git branch -d:*),Bash(git branch --show-current),Bash(git branch),Bash(git log:*),Bash(git show:*),Bash(git remote -v),Bash(gh pr create:*),Bash(gh api repos/*/pulls/*/comments),Bash(gh api repos/*/pulls/*/comments:*),Bash(gh api repos/*/pulls/*/comments/*/replies:*),Bash(gh api repos/*/issues/*/comments),Bash(gh api repos/*/issues/*/comments:*),Bash(gh issue create:*),Bash(claude -p:*)" -- "issue #<番号>(<owner>/<repo>)の対応について，git diffとソース全体のレビューを依頼する文言" > review.md
 ```
 ```
 git add <変更したファイル>
@@ -109,7 +109,7 @@ git push
 gh issue view <番号> --repo <owner>/<repo>
 ```
 
-**4.1で`EnterWorktree`を使わなかった場合**，ローカルを最新化してローカルブランチを削除する．
+**Vivadoプロジェクトを含むリポジトリの場合**(4.1でworktreeを使わなかった場合)，ローカルを最新化してローカルブランチを削除する．
 
 ```
 git checkout <デフォルトブランチ>
@@ -117,7 +117,7 @@ git pull
 git branch -d fix/issue-<番号>-<内容を表す短い語句>
 ```
 
-**4.1で`EnterWorktree`を使った場合**，上記の代わりに`ExitWorktree`(`remove`)で作業ディレクトリとブランチをまとめて削除する(元のディレクトリに自動的に戻るため，`git checkout`は不要)．
+**それ以外の場合**(4.1で`EnterWorktree`を使った場合)，上記の代わりに`ExitWorktree`(`remove`)で作業ディレクトリとブランチをまとめて削除する(元のディレクトリに自動的に戻るため，`git checkout`は不要)．
 
 # 注意
 

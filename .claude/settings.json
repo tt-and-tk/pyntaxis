@@ -25,10 +25,13 @@
       "Bash(git remote -v)",
       "Bash(gh pr create:*)",
       "Bash(gh api repos/*/pulls/*/comments)",
+      "Bash(gh api repos/*/pulls/*/comments:*)",
+      "Bash(gh api repos/*/pulls/*/comments/*/replies:*)",
       "Bash(gh api repos/*/issues/*/comments)",
+      "Bash(gh api repos/*/issues/*/comments:*)",
       "Bash(gh issue view:*)",
       "Bash(gh issue create:*)",
-      "Bash(claude -p --allowedTools \"Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)\" --disallowedTools \"Edit,Write,EnterWorktree,ExitWorktree,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git checkout:*),Bash(git pull),Bash(git branch -d:*),Bash(git branch --show-current),Bash(git branch),Bash(git log:*),Bash(git show:*),Bash(git remote -v),Bash(gh pr create:*),Bash(gh api repos/*/pulls/*/comments),Bash(gh api repos/*/issues/*/comments),Bash(gh issue create:*),Bash(claude -p:*)\" --:*)"
+      "Bash(claude -p --allowedTools \"Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)\" --disallowedTools \"Edit,Write,EnterWorktree,ExitWorktree,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git checkout:*),Bash(git pull),Bash(git branch -d:*),Bash(git branch --show-current),Bash(git branch),Bash(git log:*),Bash(git show:*),Bash(git remote -v),Bash(gh pr create:*),Bash(gh api repos/*/pulls/*/comments),Bash(gh api repos/*/pulls/*/comments:*),Bash(gh api repos/*/pulls/*/comments/*/replies:*),Bash(gh api repos/*/issues/*/comments),Bash(gh api repos/*/issues/*/comments:*),Bash(gh issue create:*),Bash(claude -p:*)\" --:*)"
     ],
     "deny": [
       "Bash(gh pr merge:*)",
