@@ -73,7 +73,7 @@ PR作成時の`--body`に，closeキーワード (`Closes owner/repo#番号`) �
 レビュー結果の修正が他のプロジェクトにも及ぶ場合は，同じissueに対応する設定のブランチを切ってから対応する．  
 
 ```
-claude -p --allowedTools "Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)" --disallowedTools "Edit,Write,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git checkout:*),Bash(git pull),Bash(git branch -d:*),Bash(git branch --show-current),Bash(git branch),Bash(git log:*),Bash(git show:*),Bash(git remote -v),Bash(gh pr create:*),Bash(gh api repos/*/pulls/*/comments),Bash(gh api repos/*/issues/*/comments),Bash(gh issue create:*),Bash(claude -p:*)" -- "issue #<番号>(<owner>/<repo>)の対応について，git diffとソース全体のレビューを依頼する文言" > review.md
+claude -p --allowedTools "Read,Grep,Glob,Skill(issue-create),Bash(git status:*),Bash(git diff:*),Bash(gh issue view:*)" --disallowedTools "Edit,Write,EnterWorktree,ExitWorktree,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git checkout:*),Bash(git pull),Bash(git branch -d:*),Bash(git branch --show-current),Bash(git branch),Bash(git log:*),Bash(git show:*),Bash(git remote -v),Bash(gh pr create:*),Bash(gh api repos/*/pulls/*/comments),Bash(gh api repos/*/issues/*/comments),Bash(gh issue create:*),Bash(claude -p:*)" -- "issue #<番号>(<owner>/<repo>)の対応について，git diffとソース全体のレビューを依頼する文言" > review.md
 ```
 ```
 git add <変更したファイル>
