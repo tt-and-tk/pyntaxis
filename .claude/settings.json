@@ -8,7 +8,7 @@
     }
   },
   "enabledPlugins": {
-    "for-pynthesis-skills": true
+    "for-pynthesis-skills@for-pynthesis-skills": true
   },
   "permissions": {
     "allow": [
