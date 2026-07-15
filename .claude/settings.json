@@ -1,4 +1,15 @@
 {
+  "extraKnownMarketplaces": {
+    "for-pynthesis-skills": {
+      "source": {
+        "source": "github",
+        "repo": "tt-and-tk/for-pynthesis-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "for-pynthesis-skills": true
+  },
   "permissions": {
     "allow": [
       "Read(C:\\D\\program\\xilinx\\pynq-z2\\pc\\specification\\**)",
