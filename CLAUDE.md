@@ -8,18 +8,16 @@ GitHubリポジトリ名: `tt-and-tk/pyntaxis`．
 
 PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフトウェア群(アセンブラ・コンパイラ)からなる自作PCプロジェクトの一部．プロジェクト全体は以下の独立したGitHubリポジトリで構成される．
 
-| リポジトリ | 役割 |
-|:-|:-|
-| `specification` | CPUアーキテクチャ・ISA・アセンブリ言語・コンパイラ仕様のドキュメント(唯一の一次情報源) |
-| `pyntaxis`(本リポジトリ) | 自作アセンブリ言語Pyntaxis(`.pt`) → SystemVerilog ROM(`.sv`)へのアセンブラ |
-| `pynesis` | 自作プログラミング言語Pynesis(`.pn`) → アセンブリ言語Pyntaxisへのコンパイラ．本リポジトリのソースファイルをincludeして使用し，`.sv`まで一貫変換も可能 |
-| `qurge` | CPU・メモリ・ROM等のハードウェア全体のVivadoプロジェクト(SystemVerilog + PS側C++) |
+| リポジトリ(GitHub) | ディレクトリ(`pc/`配下) | 役割 |
+|:-|:-|:-|
+| `specification` | `specification/` | CPUアーキテクチャ・ISA・アセンブリ言語・コンパイラ仕様のドキュメント(唯一の一次情報源) |
+| `pyntaxis`(本リポジトリ) | `assembler/` | 自作アセンブリ言語Pyntaxis(`.pt`) → SystemVerilog ROM(`.sv`)へのアセンブラ |
+| `pynesis` | `compiler/` | 自作プログラミング言語Pynesis(`.pn`) → アセンブリ言語Pyntaxisへのコンパイラ．本リポジトリのソースファイルをincludeして使用し，`.sv`まで一貫変換も可能 |
+| `qurge` | `mypc/` | CPU・メモリ・ROM等のハードウェア全体のVivadoプロジェクト(SystemVerilog + PS側C++) |
 
 ```
 入力(.pn) → [pynesisのコンパイラ] → アセンブリ(.pt) → [pyntaxis(本リポジトリ)のアセンブラ] → SystemVerilog ROM(.sv) → [Vivado] → PYNQ-Z2上のハードウェア(qurge)
 ```
-
-各リポジトリのローカルパスは`C:\D\program\xilinx\pynq-z2\pc\<ディレクトリ名>\`(`specification`はディレクトリ名=リポジトリ名，`pynesis`は`compiler\`，`pyntaxis`は`assembler\`(本リポジトリ)，`qurge`は`mypc\`)．ディレクトリ名とGitHubリポジトリ名が一致しない点に注意．
 
 ## ビルドとテスト
 
