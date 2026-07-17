@@ -225,7 +225,7 @@ endmodule
 
 ## 関連する外部ファイル（このリポジトリ外）
 
-- `C:\D\program\xilinx\pynq-z2\pc\mypc\mypc.srcs\CLAUDE.md` — CPU 全体概要
+- `C:\D\program\xilinx\pynq-z2\pc\mypc\CLAUDE.md` — CPU 全体概要
 - `C:\D\program\xilinx\pynq-z2\pc\mypc\mypc.srcs\sources_1\new\machine.svh` — 命令定義
 - `C:\D\program\xilinx\pynq-z2\pc\mypc\mypc.srcs\sources_1\new\rom_sv.sv` — 実運用 ROM モジュール（出力形式の参考）
 - `C:\D\program\xilinx\pynq-z2\pc\specification\isa.md` — ISA 仕様
