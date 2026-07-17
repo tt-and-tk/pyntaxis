@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## このリポジトリについて
+
+GitHubリポジトリ名: `tt-and-tk/pyntaxis`．
+
+PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフトウェア群(アセンブラ・コンパイラ)からなる自作PCプロジェクトの一部．プロジェクト全体は以下の独立したGitHubリポジトリで構成される．
+
+| リポジトリ | 役割 |
+|:-|:-|
+| `specification` | CPUアーキテクチャ・ISA・アセンブリ言語・コンパイラ仕様のドキュメント(唯一の一次情報源) |
+| `pyntaxis`(本リポジトリ) | アセンブリ言語(`.pt`) → SystemVerilog ROM(`.sv`)へのアセンブラ |
+| `pynesis` | 自作C系言語(`.c`) → アセンブリ言語へのコンパイラ．内部で本リポジトリを呼び出し`.sv`まで一貫変換も可能 |
+| `qurge` | CPU本体のVivadoプロジェクト(SystemVerilog + PS側C++) |
+
+```
+入力(.c) → [pynesis] → アセンブリ(.asm) → [pyntaxis(本リポジトリ)] → SystemVerilog ROM(.sv) → [Vivado] → PYNQ-Z2上のCPU(qurge)
+```
+
+本リポジトリは，コンパイラ(pynesis)が出力したアセンブリ言語をCPU(qurge)が読み込めるSystemVerilog ROMに変換する，変換パイプラインの最終段を担う．
+
 ## プロジェクト概要
 
 PYNQ-Z2 上で動かす自作 CPU 向けのアセンブラ。アセンブリ言語「Pyntaxis」の `.pt` ファイルを読み込み、`machine.svh` の `machine_p` パッケージを使った SystemVerilog ROM 初期化コード (`.sv`) を出力する。
