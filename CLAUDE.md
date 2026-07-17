@@ -16,7 +16,7 @@ PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフト
 | `qurge` | CPU本体のVivadoプロジェクト(SystemVerilog + PS側C++) |
 
 ```
-入力(.c) → [pynesis] → アセンブリ(.asm) → [pyntaxis(本リポジトリ)] → SystemVerilog ROM(.sv) → [Vivado] → PYNQ-Z2上のCPU(qurge)
+入力(.c) → [pynesis] → アセンブリ(.pt) → [pyntaxis(本リポジトリ)] → SystemVerilog ROM(.sv) → [Vivado] → PYNQ-Z2上のCPU(qurge)
 ```
 
 本リポジトリは，コンパイラ(pynesis)が出力したアセンブリ言語をCPU(qurge)が読み込めるSystemVerilog ROMに変換する，変換パイプラインの最終段を担う．
