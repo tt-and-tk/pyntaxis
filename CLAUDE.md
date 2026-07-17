@@ -16,14 +16,10 @@ PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフト
 | `qurge` | CPU・メモリ・ROM等のハードウェア全体のVivadoプロジェクト(SystemVerilog + PS側C++) |
 
 ```
-入力(.pn) → [pynesis] → アセンブリ(.pt) → [pyntaxis(本リポジトリ)] → SystemVerilog ROM(.sv) → [Vivado] → PYNQ-Z2上のCPU(qurge)
+入力(.pn) → [pynesisのコンパイラ] → アセンブリ(.pt) → [pyntaxis(本リポジトリ)のアセンブラ] → SystemVerilog ROM(.sv) → [Vivado] → PYNQ-Z2上のハードウェア(qurge)
 ```
 
 各リポジトリのローカルパスは`C:\D\program\xilinx\pynq-z2\pc\<ディレクトリ名>\`(`specification`はディレクトリ名=リポジトリ名，`pynesis`は`compiler\`，`pyntaxis`は`assembler\`(本リポジトリ)，`qurge`は`mypc\`)．ディレクトリ名とGitHubリポジトリ名が一致しない点に注意．
-
-## プロジェクト概要
-
-PYNQ-Z2 上で動かす自作 CPU 向けのアセンブラ。アセンブリ言語「Pyntaxis」の `.pt` ファイルを読み込み、`machine.svh` の `machine_p` パッケージを使った SystemVerilog ROM 初期化コード (`.sv`) を出力する。
 
 ## ビルドとテスト
 
@@ -192,17 +188,6 @@ endmodule
 ファイルを修正する場合は，必ず対応するGitHub issueを起票し，そのissue用のブランチ(`fix/issue-<番号>-<内容を表す短い語句>`)を作成してから行う．デフォルトブランチを直接編集しない．
 
 **例外:** `CLAUDE.md`や`.claude/skills/`配下のスキル定義ファイルの修正は，ソースコードの変更ではないためissue起票は不要．ただしブランチ作成は必要(デフォルトブランチを直接編集しない)．作業中の既存ブランチがあれば，新たにブランチを切らずそれに乗せてよい．
-
-## 関連する外部ファイル(このリポジトリ外)
-
-- `C:\D\program\xilinx\pynq-z2\pc\mypc\CLAUDE.md` — CPU 全体概要
-- `C:\D\program\xilinx\pynq-z2\pc\mypc\mypc.srcs\sources_1\new\machine.svh` — 命令定義
-- `C:\D\program\xilinx\pynq-z2\pc\mypc\mypc.srcs\sources_1\new\rom_sv.sv` — 実運用 ROM モジュール(出力形式の参考)
-- `C:\D\program\xilinx\pynq-z2\pc\specification\isa.md` — ISA 仕様
-- `C:\D\program\xilinx\pynq-z2\pc\specification\assembler.md` — アセンブラ文法仕様
-- `C:\D\program\xilinx\pynq-z2\pc\specification\register.md` — レジスタ仕様
-- `C:\D\program\xilinx\pynq-z2\pc\specification\memory.md` — メモリ仕様
-- `C:\D\program\xilinx\pynq-z2\pc\specification\rom.md` — ROM 仕様
 
 ## 次の作業候補
 
