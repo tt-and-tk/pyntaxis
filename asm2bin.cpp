@@ -407,7 +407,7 @@ void assemble_body(
 
         // 最大命令数を超えた
         if (static_cast<int>(instructions.size()) > MAX_LINE_NUM) {
-            throw std::string("asm syntax error: line more than ") + std::to_string(MAX_LINE_NUM);
+            throw std::string("asm syntax error: instructions more than ") + std::to_string(MAX_LINE_NUM);
         }
     }
 
