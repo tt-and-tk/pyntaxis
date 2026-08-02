@@ -405,9 +405,9 @@ void assemble_body(
         // アセンブリを機械語にしてinstructionsに追加する
         output_bin_line(instructions, functions, line);
 
-        // 最大行数を超えた
-        if (static_cast<int>(instructions.size()) >= MAX_LINE_NUM) {
-            throw std::string("asm syntax error: line more than 255");
+        // 最大命令数を超えた
+        if (static_cast<int>(instructions.size()) > MAX_LINE_NUM) {
+            throw std::string("asm syntax error: instructions more than ") + std::to_string(MAX_LINE_NUM);
         }
     }
 
