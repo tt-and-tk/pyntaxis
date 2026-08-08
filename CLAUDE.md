@@ -44,9 +44,7 @@ asm2bin.exe input.pt
 
 ## 詳細ドキュメント
 
-- アセンブリ言語の文法・命令フォーマット・命令一覧 → `../specification/assembler.md`・`../specification/isa.md`(このリポジトリ内には転記しない．唯一の一次情報源)
-- アセンブラ内部の実装(処理の流れ・ラベル解決の仕組み・出力フォーマット等) → `docs/architecture.md`
-- テストケース一覧 → `docs/testcases.md`
+言語仕様・命令フォーマット等は`../specification/index.md`を参照(唯一の一次情報源．このリポジトリ内には転記しない)。アセンブラ内部の実装・テストケースの内容はソースファイル自体を参照。
 
 ## Issue対応の徹底
 
