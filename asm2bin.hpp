@@ -44,7 +44,7 @@ const std::map<std::string, command_arg_t> commands = {
     {"sra"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
 
     // 代入系(A系)
-    {"mov"  ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
+    {"mov"  ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},  // MASKはCPU側で未実装(値に関わらず動作は変わらず，常に全バイトへ書き込まれる)
 
     // 分岐系(F系)
     // 飛び先は局所ラベルのみ(相対オフセットに解決される)
