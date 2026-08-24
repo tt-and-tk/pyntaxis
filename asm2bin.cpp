@@ -62,8 +62,8 @@ static std::string function_name2line_num(                                // 関
 static void output_footer(std::ofstream &sv_file);                       // svファイルのフッターを出力する
 
 // 出力されるアセンブリプログラムの最大行数
-// ROM自体に固定容量は無く(ROM_SIZEはこの行数から自動算出する)，現行のROM読み出し回路(組合せ論理)が
-// LUT資源のみで安全に収まる範囲として設定したソフトウェア側の暫定上限(詳細は../specification/limitations.md)
+// ROM自体に固定容量は無く(ROM_SIZEはこの行数から自動算出する)，プログラムカウンタの
+// ビット幅(12ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える上限(詳細は../specification/limitations.md)
 const int MAX_LINE_NUM = 4096;
 const char FUNC_REF_DELIM = '@';                  // 出力本体で関数参照を囲む区切り文字（命令名や数値との衝突を防ぐ）
 
@@ -110,8 +110,8 @@ int assemble_asm_to_sv(int argc, char **argv) {
         return 1;
     }
 
-    // 出力ファイルを開く
-    sv_file.open(args.sv_file_name);
+    // 出力ファイルを開く（テキストモードによる改行コード変換(LF→CRLF)を避けるためバイナリモードで開く）
+    sv_file.open(args.sv_file_name, std::ios::binary);
     if (!sv_file) {
         std::cout << "cannot open sv file: " << args.sv_file_name << std::endl;
         return 1;
@@ -224,6 +224,7 @@ void output_header(std::ofstream &sv_file) {
             << "`include \"machine.svh\"\n"
             << "\n"
             << "module rom_sv(\n"
+            << "    input logic clk,\n"
             << "    rom_read_if.slave rom_read\n"
             << "    );\n"
             << "    import machine_p::*;\n"
@@ -265,7 +266,7 @@ void output_bin(std::ifstream &asm_file, std::ofstream &sv_file) {
     // 命令数をlocalparam，machine_t配列として出力する
     const std::string body = function_name2line_num(functions, join_instructions(instructions));
     sv_file << "    localparam integer ROM_SIZE = " << instructions.size() << ";\n\n";
-    sv_file << "    machine_t machines[0:ROM_SIZE - 1] = {\n";
+    sv_file << "    (* rom_style = \"block\" *) machine_t machines[0:ROM_SIZE - 1] = {\n";
     sv_file << body;
     sv_file << "    };\n";
 }
@@ -738,12 +739,13 @@ std::string function_name2line_num(
 // svファイルのフッターを出力する
 void output_footer(std::ofstream &sv_file) {
     sv_file << "\n"
-            << "    always_comb begin\n"
-            << "        rom_read.valid = (rom_read.pc < ROM_SIZE);\n"
-            << "        if (rom_read.valid) begin\n"
-            << "            rom_read.machine = machines[rom_read.pc];\n"
+            << "    always_ff @(posedge clk) begin\n"
+            << "        rom_read.valid <= (rom_read.pc < ROM_SIZE);\n"
+            << "\n"
+            << "        if (rom_read.pc < ROM_SIZE) begin\n"
+            << "            rom_read.machine <= machines[rom_read.pc];\n"
             << "        end else begin\n"
-            << "            rom_read.machine = nop();\n"
+            << "            rom_read.machine <= nop();\n"
             << "        end\n"
             << "    end\n"
             << "\n"
