@@ -739,9 +739,6 @@ std::string function_name2line_num(
 // svファイルのフッターを出力する
 void output_footer(std::ofstream &sv_file) {
     sv_file << "\n"
-            << "    // BRAMへ推論させるため，クロック同期の読み出しにする(rom_read.pcを出した次のサイクルで\n"
-            << "    // rom_read.machine/rom_read.validが確定する．リセット分岐を持たない定型にすることで\n"
-            << "    // BRAM推論を妨げないようにしている点に注意)\n"
             << "    always_ff @(posedge clk) begin\n"
             << "        // pcがROMの命令数に収まっているかを上位へ伝える\n"
             << "        rom_read.valid <= (rom_read.pc < ROM_SIZE);\n"

@@ -16,9 +16,6 @@ module rom_sv(
         jmp(0, 33'h1_0000_0000 + 3)
     };
 
-    // BRAMへ推論させるため，クロック同期の読み出しにする(rom_read.pcを出した次のサイクルで
-    // rom_read.machine/rom_read.validが確定する．リセット分岐を持たない定型にすることで
-    // BRAM推論を妨げないようにしている点に注意)
     always_ff @(posedge clk) begin
         // pcがROMの命令数に収まっているかを上位へ伝える
         rom_read.valid <= (rom_read.pc < ROM_SIZE);
