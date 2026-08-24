@@ -4109,7 +4109,6 @@ module rom_sv(
     };
 
     always_ff @(posedge clk) begin
-        // pcがROMの命令数に収まっているかを上位へ伝える
         rom_read.valid <= (rom_read.pc < ROM_SIZE);
 
         if (rom_read.pc < ROM_SIZE) begin

@@ -740,7 +740,6 @@ std::string function_name2line_num(
 void output_footer(std::ofstream &sv_file) {
     sv_file << "\n"
             << "    always_ff @(posedge clk) begin\n"
-            << "        // pcがROMの命令数に収まっているかを上位へ伝える\n"
             << "        rom_read.valid <= (rom_read.pc < ROM_SIZE);\n"
             << "\n"
             << "        if (rom_read.pc < ROM_SIZE) begin\n"
