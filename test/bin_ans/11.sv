@@ -9,7 +9,6 @@ module rom_sv(
 
     localparam integer ROM_SIZE = 13;
 
-    // BRAMへ推論させるため配列自体にも明示する
     (* rom_style = "block" *) machine_t machines[0:ROM_SIZE - 1] = {
         sll(1, 2, 3, 0),
         srl(1, 2, 3, 0),

@@ -110,8 +110,8 @@ int assemble_asm_to_sv(int argc, char **argv) {
         return 1;
     }
 
-    // 出力ファイルを開く
-    sv_file.open(args.sv_file_name);
+    // 出力ファイルを開く（テキストモードによる改行コード変換(LF→CRLF)を避けるためバイナリモードで開く）
+    sv_file.open(args.sv_file_name, std::ios::binary);
     if (!sv_file) {
         std::cout << "cannot open sv file: " << args.sv_file_name << std::endl;
         return 1;
@@ -266,7 +266,6 @@ void output_bin(std::ifstream &asm_file, std::ofstream &sv_file) {
     // 命令数をlocalparam，machine_t配列として出力する
     const std::string body = function_name2line_num(functions, join_instructions(instructions));
     sv_file << "    localparam integer ROM_SIZE = " << instructions.size() << ";\n\n";
-    sv_file << "    // BRAMへ推論させるため配列自体にも明示する\n";
     sv_file << "    (* rom_style = \"block\" *) machine_t machines[0:ROM_SIZE - 1] = {\n";
     sv_file << body;
     sv_file << "    };\n";
