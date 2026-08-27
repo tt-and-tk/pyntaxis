@@ -31,7 +31,7 @@ static void assemble_body(                                               // 本�
     std::map<std::string, std::size_t> &local_labels,
     std::vector<std::string> &instructions
 );
-static void output_bin_line(                                             // アセンブリ一行を機械語化しinstructionsへ追加
+static void output_instruction_line(                                             // アセンブリ一行を機械語化しinstructionsへ追加
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
 );
@@ -57,7 +57,7 @@ static std::string join_instructions(                                    // 命�
     const std::vector<std::string> &instructions
 );
 static std::string function_name2line_num(                                // 関数参照を行番号に置換する
-    const std::map<std::string, std::size_t> &functions, const std::string &bin
+    const std::map<std::string, std::size_t> &functions, const std::string &body
 );
 static void output_footer(std::ofstream &sv_file);                       // svファイルのフッターを出力する
 
@@ -404,7 +404,7 @@ void assemble_body(
         if (command == "ret") current_has_ret = true;
 
         // アセンブリを機械語にしてinstructionsに追加する
-        output_bin_line(instructions, functions, line);
+        output_instruction_line(instructions, functions, line);
 
         // 最大命令数を超えた
         if (static_cast<int>(instructions.size()) > MAX_LINE_NUM) {
@@ -419,7 +419,7 @@ void assemble_body(
 }
 
 // アセンブリ一行を機械語化しinstructionsへ追加する
-void output_bin_line(
+void output_instruction_line(
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
 ) {
@@ -718,9 +718,9 @@ std::string join_instructions(const std::vector<std::string> &instructions) {
 
 // 関数参照を行番号に置換する
 std::string function_name2line_num(
-    const std::map<std::string, std::size_t> &functions, const std::string &bin
+    const std::map<std::string, std::size_t> &functions, const std::string &body
 ) {
-    std::string rtn = bin;  // 引数は加工できないので，加工用の変数を用意
+    std::string rtn = body;  // 引数は加工できないので，加工用の変数を用意
 
     // 区切り文字で囲まれた関数参照（@func@ など）を対応する行番号に置換する
     // 区切り文字で囲んでいるため，f1 と f11 のような接頭辞の衝突や，

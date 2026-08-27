@@ -58,7 +58,7 @@ const std::map<std::string, command_arg_t> commands = {
     // ジャンプ系(J系)
     // 飛び先は局所ラベルのみ(絶対indexに解決される)．レジスタ・数値による飛び先指定は持たない
     {"jmp"  ,  {1, {arg_t::LABEL                                                      }, true , true }},
-    {"call" ,  {1, {arg_t::FUNC_NAME                                                  }, false, false}},  // 引数は呼び出し先関数名。出力は output_bin_line で特別に組み立てる(rs1=0 + 即値ターゲット)
+    {"call" ,  {1, {arg_t::FUNC_NAME                                                  }, false, false}},  // 引数は呼び出し先関数名。出力は output_instruction_line で特別に組み立てる(rs1=0 + 即値ターゲット)
     {"ret"  ,  {0, {                                                                  }, false, false}},  // 引数なし。汎用経路が machine::ret() を生成する
 
     // メモリ系(M系)
