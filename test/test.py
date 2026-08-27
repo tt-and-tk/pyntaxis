@@ -1,7 +1,7 @@
 """
-test/asm/*.pt を全て変換して test/bin/ へ出力するテストスクリプト。
+test/asm/*.pt を全て変換して test/sv/ へ出力するテストスクリプト。
 変換に成功した件数と失敗した件数を報告する。
-bin_ans/ に期待値ファイルがなければ FAIL とする。
+sv_ans/ に期待値ファイルがなければ FAIL とする。
 """
 
 import difflib
@@ -11,12 +11,12 @@ import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASM_DIR = os.path.join(SCRIPT_DIR, "asm")
-BIN_DIR = os.path.join(SCRIPT_DIR, "bin")
-BIN_ANS_DIR = os.path.join(SCRIPT_DIR, "bin_ans")
-ASM2BIN = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2bin.exe")
+SV_DIR = os.path.join(SCRIPT_DIR, "sv")
+SV_ANS_DIR = os.path.join(SCRIPT_DIR, "sv_ans")
+ASM2SV = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2sv.exe")
 
 def main():
-    os.makedirs(BIN_DIR, exist_ok=True)
+    os.makedirs(SV_DIR, exist_ok=True)
 
     asm_files = sorted(
         f for f in os.listdir(ASM_DIR) if f.endswith(".pt")
@@ -34,11 +34,11 @@ def main():
     for asm_file in asm_files:
         asm_path = os.path.join(ASM_DIR, asm_file)
         sv_name = asm_file.replace(".pt", ".sv")
-        sv_path = os.path.join(BIN_DIR, sv_name)
-        ans_path = os.path.join(BIN_ANS_DIR, sv_name)
+        sv_path = os.path.join(SV_DIR, sv_name)
+        ans_path = os.path.join(SV_ANS_DIR, sv_name)
 
         result = subprocess.run(
-            [ASM2BIN, asm_path, "-bin", sv_path],
+            [ASM2SV, asm_path, "-sv", sv_path],
             capture_output=True,
             text=True,
         )
@@ -54,10 +54,10 @@ def main():
 
         convert_success.append(asm_file)
 
-        # bin_ans/ に期待値ファイルがなければエラー
+        # sv_ans/ に期待値ファイルがなければエラー
         if not os.path.exists(ans_path):
             compare_fail.append(asm_file)
-            print(f"[FAIL] {asm_file}  (bin_ans/{sv_name} が存在しません)")
+            print(f"[FAIL] {asm_file}  (sv_ans/{sv_name} が存在しません)")
             continue
 
         with open(sv_path, encoding="utf-8") as f:
@@ -73,8 +73,8 @@ def main():
             diff = difflib.unified_diff(
                 expected_lines,
                 actual_lines,
-                fromfile=f"expected (bin_ans/{sv_name})",
-                tofile=f"actual   (bin/{sv_name})",
+                fromfile=f"expected (sv_ans/{sv_name})",
+                tofile=f"actual   (sv/{sv_name})",
             )
             print(f"[FAIL] {asm_file}")
             for line in "".join(diff).splitlines():

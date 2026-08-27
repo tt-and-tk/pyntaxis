@@ -1,6 +1,6 @@
 *.exe
 review*.md
-test/bin/
+test/sv/
 .claude/settings.local.json
 .env
 .mcp.json

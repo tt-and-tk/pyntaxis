@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 
-#include "asm2bin.hpp"
+#include "asm2sv.hpp"
 
 int str_find_first_of(const std::string &str, const char ch);     // 最初にchが出現する文字数を返す．なければ末尾までの文字数
 std::string ltrim(const std::string &str);                        // 先頭の半角スペースを除去する
