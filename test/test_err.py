@@ -11,7 +11,7 @@ import tempfile
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASM_ERR_DIR = os.path.join(SCRIPT_DIR, "asm_err")
-ASM2BIN = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2bin.exe")
+ASM2SV = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2sv.exe")
 
 def main():
     if not os.path.isdir(ASM_ERR_DIR):
@@ -35,7 +35,7 @@ def main():
             sv_path = os.path.join(tmpdir, asm_file.replace(".pt", ".sv"))
 
             result = subprocess.run(
-                [ASM2BIN, asm_path, "-bin", sv_path],
+                [ASM2SV, asm_path, "-sv", sv_path],
                 capture_output=True,
                 text=True,
             )

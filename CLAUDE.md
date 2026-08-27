@@ -24,22 +24,22 @@ PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフト
 
 **ビルド:**
 ```
-g++ -o asm2bin.exe asm2bin.cpp
+g++ -o asm2sv.exe asm2sv.cpp
 ```
 
 **テスト(`test/` ディレクトリで実行):**
 ```
 cd test
-python test.py        # 正常系: test/asm/*.pt を全て変換し test/bin/ へ出力
+python test.py        # 正常系: test/asm/*.pt を全て変換し test/sv/ へ出力
 python test_err.py    # 異常系: test/asm_err/*.pt が全てエラーになることを確認
 ```
-期待値は `test/bin_ans/` にある。
+期待値は `test/sv_ans/` にある。
 
 **単体実行:**
 ```
-asm2bin.exe input.pt -bin output.sv
-rem または(-bin 省略時は input.sv が生成される)
-asm2bin.exe input.pt
+asm2sv.exe input.pt -sv output.sv
+rem または(-sv 省略時は input.sv が生成される)
+asm2sv.exe input.pt
 ```
 
 ## Issue対応の徹底

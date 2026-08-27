@@ -5,8 +5,8 @@
 #include <iostream>
 #include <vector>
 
-#include "asm2bin.hpp"
-#include "asm2bin_main.hpp"
+#include "asm2sv.hpp"
+#include "asm2sv_main.hpp"
 #include "util.hpp"
 
 // コマンドライン引数情報
@@ -18,10 +18,10 @@ typedef struct {
 // 関数
 // (assemble_asm_to_sv以外はこのファイル内でしか使わないため，c2bin.exeへのリンク時に
 //  コンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
-static void get_args(int argc, char **argv, args_t &args);               // コマンドライン引数を取得
-static void asm2bin(std::ifstream &asm_file, std::ofstream &sv_file);    // アセンブリをバイナリに変換する
-static void output_header(std::ofstream &sv_file);                       // svファイルのヘッダーを出力する
-static void output_bin(std::ifstream &asm_file, std::ofstream &sv_file); // バイナリ部分を出力する
+static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
+static void asm2sv(std::ifstream &asm_file, std::ofstream &sv_file);      // アセンブリをSystemVerilogに変換する
+static void output_header(std::ofstream &sv_file);                        // svファイルのヘッダーを出力する
+static void output_body(std::ifstream &asm_file, std::ofstream &sv_file); // 機械語化した命令部分を出力する
 static std::string read_global_line(std::ifstream &asm_file);            // .global行まで読み飛ばして返す
 static void get_function_names(                                          // プログラムに存在する関数の名前を取得する
     std::map<std::string, std::size_t> &functions, std::string line
@@ -31,7 +31,7 @@ static void assemble_body(                                               // 本�
     std::map<std::string, std::size_t> &local_labels,
     std::vector<std::string> &instructions
 );
-static void output_bin_line(                                             // アセンブリ一行を機械語化しinstructionsへ追加
+static void output_instruction_line(                                             // アセンブリ一行を機械語化しinstructionsへ追加
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
 );
@@ -57,7 +57,7 @@ static std::string join_instructions(                                    // 命�
     const std::vector<std::string> &instructions
 );
 static std::string function_name2line_num(                                // 関数参照を行番号に置換する
-    const std::map<std::string, std::size_t> &functions, const std::string &bin
+    const std::map<std::string, std::size_t> &functions, const std::string &body
 );
 static void output_footer(std::ofstream &sv_file);                       // svファイルのフッターを出力する
 
@@ -117,9 +117,9 @@ int assemble_asm_to_sv(int argc, char **argv) {
         return 1;
     }
 
-    // アセンブリ言語をバイナリに変換する
+    // アセンブリ言語をSystemVerilogに変換する
     try {
-        asm2bin(asm_file, sv_file);
+        asm2sv(asm_file, sv_file);
 
         // 正常終了を報告
         std::cout << "assembled: " << args.sv_file_name << std::endl;
@@ -139,7 +139,7 @@ int assemble_asm_to_sv(int argc, char **argv) {
 
 // コマンドライン引数を取得
 // -pt: 必須引数．アセンブリファイル名．
-// -bin: 出力ファイル名．省略した場合，アセンブリファイル名の拡張子を変更して同階層に出力される．
+// -sv: 出力ファイル名．省略した場合，アセンブリファイル名の拡張子を変更して同階層に出力される．
 // 何も指定せずに引数を置いた場合，アセンブリファイル名と解釈される．
 void get_args(int argc, char **argv, args_t &args) {
     // 全ての引数でループ(コマンド名は飛ばす)
@@ -157,7 +157,7 @@ void get_args(int argc, char **argv, args_t &args) {
 
             // 指定されたパラメータを保存
             if      (kind == "-pt")  args.asm_file_name = argv[i];
-            else if (kind == "-bin") args.sv_file_name  = argv[i];
+            else if (kind == "-sv")  args.sv_file_name  = argv[i];
         }
         // 指定子の直後ではないなら
         else {
@@ -194,7 +194,7 @@ void get_args(int argc, char **argv, args_t &args) {
         std::cout << "args fail" << std::endl
                   << "-pt: asm file name. e.g. ~~.pt" << std::endl
                   << "    actual: " << args.asm_file_name << std::endl
-                  << "-bin: output file name. e.g. ~~.sv" << std::endl
+                  << "-sv: output file name. e.g. ~~.sv" << std::endl
                   << "    actual: " << args.sv_file_name << std::endl;
 
         // 後の処理でエラーになるよう，コマンドライン引数をクリア
@@ -203,13 +203,13 @@ void get_args(int argc, char **argv, args_t &args) {
     }
 }
 
-// アセンブリをバイナリに変換する
-void asm2bin(std::ifstream &asm_file, std::ofstream &sv_file) {
+// アセンブリをSystemVerilogに変換する
+void asm2sv(std::ifstream &asm_file, std::ofstream &sv_file) {
     // ヘッダーを出力する
     output_header(sv_file);
 
-    // バイナリ部分を出力する
-    output_bin(asm_file, sv_file);
+    // 機械語化した命令部分を出力する
+    output_body(asm_file, sv_file);
 
     // フッターを出力する
     output_footer(sv_file);
@@ -231,8 +231,8 @@ void output_header(std::ofstream &sv_file) {
             << "\n";
 }
 
-// バイナリ部分を出力する
-void output_bin(std::ifstream &asm_file, std::ofstream &sv_file) {
+// 機械語化した命令部分を出力する
+void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
     std::map<std::string, std::size_t> functions;     // 関数とその開始pc
     std::map<std::string, std::size_t> local_labels;  // 局所ラベルとその位置（直後の命令のindex）
     std::vector<std::string> instructions;            // 機械語にした命令一覧（1要素=1命令）
@@ -404,7 +404,7 @@ void assemble_body(
         if (command == "ret") current_has_ret = true;
 
         // アセンブリを機械語にしてinstructionsに追加する
-        output_bin_line(instructions, functions, line);
+        output_instruction_line(instructions, functions, line);
 
         // 最大命令数を超えた
         if (static_cast<int>(instructions.size()) > MAX_LINE_NUM) {
@@ -419,7 +419,7 @@ void assemble_body(
 }
 
 // アセンブリ一行を機械語化しinstructionsへ追加する
-void output_bin_line(
+void output_instruction_line(
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
 ) {
@@ -718,9 +718,9 @@ std::string join_instructions(const std::vector<std::string> &instructions) {
 
 // 関数参照を行番号に置換する
 std::string function_name2line_num(
-    const std::map<std::string, std::size_t> &functions, const std::string &bin
+    const std::map<std::string, std::size_t> &functions, const std::string &body
 ) {
-    std::string rtn = bin;  // 引数は加工できないので，加工用の変数を用意
+    std::string rtn = body;  // 引数は加工できないので，加工用の変数を用意
 
     // 区切り文字で囲まれた関数参照（@func@ など）を対応する行番号に置換する
     // 区切り文字で囲んでいるため，f1 と f11 のような接頭辞の衝突や，
