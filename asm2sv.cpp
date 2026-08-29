@@ -75,8 +75,8 @@ const std::string LABEL_REF_REL = "<<REL:";       // F系用ラベル参照の�
 const std::string LABEL_REF_CLOSE = ">>";         // ラベル参照の終端
 
 // メイン関数: assemble_asm_to_svをそのまま呼ぶだけ
-// c2bin.cppに直接組み込むビルド(ASM2BIN_NO_MAIN定義時)ではmain多重定義を避けるため除外する
-#ifndef ASM2BIN_NO_MAIN
+// pn2sv.cppに直接組み込むビルド(ASM2SV_NO_MAIN定義時)ではmain多重定義を避けるため除外する
+#ifndef ASM2SV_NO_MAIN
 int main(int argc, char **argv) {
     return assemble_asm_to_sv(argc, argv);
 }
