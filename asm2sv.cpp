@@ -16,7 +16,7 @@ typedef struct {
 } args_t;
 
 // 関数
-// (assemble_asm_to_sv以外はこのファイル内でしか使わないため，c2bin.exeへのリンク時に
+// (assemble_asm_to_sv以外はこのファイル内でしか使わないため，pn2sv.exeへのリンク時に
 //  コンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
 static void asm2sv(std::ifstream &asm_file, std::ofstream &sv_file);      // アセンブリをSystemVerilogに変換する
