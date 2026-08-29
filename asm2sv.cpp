@@ -16,7 +16,7 @@ typedef struct {
 } args_t;
 
 // 関数
-// (assemble_asm_to_sv以外はこのファイル内でしか使わないため，c2bin.exeへのリンク時に
+// (assemble_asm_to_sv以外はこのファイル内でしか使わないため，pn2sv.exeへのリンク時に
 //  コンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
 static void asm2sv(std::ifstream &asm_file, std::ofstream &sv_file);      // アセンブリをSystemVerilogに変換する
@@ -75,8 +75,8 @@ const std::string LABEL_REF_REL = "<<REL:";       // F系用ラベル参照の�
 const std::string LABEL_REF_CLOSE = ">>";         // ラベル参照の終端
 
 // メイン関数: assemble_asm_to_svをそのまま呼ぶだけ
-// c2bin.cppに直接組み込むビルド(ASM2BIN_NO_MAIN定義時)ではmain多重定義を避けるため除外する
-#ifndef ASM2BIN_NO_MAIN
+// pn2sv.cppに直接組み込むビルド(ASM2SV_NO_MAIN定義時)ではmain多重定義を避けるため除外する
+#ifndef ASM2SV_NO_MAIN
 int main(int argc, char **argv) {
     return assemble_asm_to_sv(argc, argv);
 }
