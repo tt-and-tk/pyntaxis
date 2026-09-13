@@ -50,9 +50,6 @@ static void resolve_labels(                                              // 局�
     const std::map<std::string, std::size_t> &local_labels
 );
 static std::string offset2imm(const long offset);                        // 相対オフセットをイミディエイト表記にする（負は32bit2の補数）
-static void apply_main_self_loop(                                        // mainが到達する最初のretを自己ループに置換する
-    std::vector<std::string> &instructions
-);
 static std::string join_instructions(                                    // 命令を結合する（末尾カンマ無し）
     const std::vector<std::string> &instructions
 );
@@ -260,9 +257,6 @@ void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
     // 局所ラベル参照を解決する（絶対index/相対オフセット）
     resolve_labels(instructions, local_labels);
 
-    // mainが到達する最初のretを自己ループに置き換える
-    apply_main_self_loop(instructions);
-
     // 命令数をlocalparam，machine_t配列として出力する
     const std::string body = function_name2line_num(functions, join_instructions(instructions));
     sv_file << "    localparam integer ROM_SIZE = " << instructions.size() << ";\n\n";
@@ -405,6 +399,14 @@ void assemble_body(
 
         // アセンブリを機械語にしてinstructionsに追加する
         output_instruction_line(instructions, functions, line);
+
+        // mainはどこからもCALLされず戻り先が無いため，main内のretはすべてプログラムの終了を表す
+        // 自分自身へのjmp(無限ループ)に置き換えて，どの経路でmainを抜けても同じ終了状態にする
+        // 先頭から最初に現れるretだけを置き換える方式は，早期returnがあると末尾のretが残るため採用しない
+        if (current_function == "main" && command == "ret") {
+            const std::size_t pc = instructions.size() - 1;
+            instructions[pc] = "jmp(0, 33'h1_0000_0000 + " + std::to_string(pc) + ")";
+        }
 
         // 最大命令数を超えた
         if (static_cast<int>(instructions.size()) > MAX_LINE_NUM) {
@@ -688,20 +690,6 @@ std::string offset2imm(const long offset) {
     char buf[16];
     snprintf(buf, sizeof(buf), "32'h%08x", static_cast<unsigned int>(offset));
     return std::string(buf);
-}
-
-// mainが到達する最初のretを自己ループに置換する
-// プログラムはmain(pc=0)から実行されるため，先頭から線形に見て最初に現れるretが
-// mainがCALLされずに到達するret＝戻り先の無いretになる．これを自分自身へのjmp(無限ループ)に
-// 置き換えてmainを停止させる（mainは必ずretを持つので必ず見つかる）
-void apply_main_self_loop(std::vector<std::string> &instructions) {
-    for (std::size_t pc = 0; pc < instructions.size(); pc++) {
-        if (instructions[pc] == "ret()") {
-            instructions[pc] =
-                "jmp(0, 33'h1_0000_0000 + " + std::to_string(pc) + ")";
-            return;  // 最初の1つだけ置換する
-        }
-    }
 }
 
 // 命令を結合する（各命令を8スペースインデントし，カンマ区切りで並べる）
