@@ -1,0 +1,21 @@
+; main内に複数のretがある場合，すべてが自己ループに置き換わることを確認する
+; mainの早期retは条件分岐の成立時に飛び越され，その経路では末尾のretに到達する
+; main以外の関数のretは複数あってもretのまま残る
+
+.global main, func
+
+main:
+    call func       ; index 0 → func(6)
+    eq r1 r2 .L0    ; index 1 前方 → .L0(3) - 1 = 2
+    ret             ; index 2 早期ret → 自己ループ(2)
+.L0:
+    call func       ; index 3 → func(6)
+    jmp .L1         ; index 4 絶対 → 5
+.L1:
+    ret             ; index 5 末尾ret → 自己ループ(5)
+
+func:
+    eq r1 r2 .L2    ; index 6 前方 → .L2(8) - 6 = 2
+    ret             ; index 7 retのまま
+.L2:
+    ret             ; index 8 retのまま
