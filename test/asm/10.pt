@@ -11,4 +11,7 @@ main:
     sub r1 r2 r3
     mul r1 r2 r3
     div r1 r2 r3
+    div r1 r2 r3 4
+    divu r1 r2 r3
+    divu r1 r2 r3 4
     ret

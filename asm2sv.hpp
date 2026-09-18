@@ -36,6 +36,7 @@ const std::map<std::string, command_arg_t> commands = {
     {"sub"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
     {"mul"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
     {"div"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
+    {"divu" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
 
     // シフト系(S系)
     {"sll"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
@@ -54,6 +55,10 @@ const std::map<std::string, command_arg_t> commands = {
     {"gt"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
     {"elt"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
     {"egt"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
+    {"ltu"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
+    {"gtu"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
+    {"eltu" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
+    {"egtu" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
 
     // ジャンプ系(J系)
     // 飛び先は局所ラベルのみ(絶対indexに解決される)．レジスタ・数値による飛び先指定は持たない
