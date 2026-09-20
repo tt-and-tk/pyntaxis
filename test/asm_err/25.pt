@@ -1,0 +1,8 @@
+; rmrのイミディエイトデータ省略 → エラーになるべき
+; rmrは番地をrs1+immで求めるため，immを省略できない
+
+.global main
+
+main:
+    rmr fh r16 r1
+    ret

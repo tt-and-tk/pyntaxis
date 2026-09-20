@@ -7,16 +7,20 @@ module rom_sv(
     );
     import machine_p::*;
 
-    localparam integer ROM_SIZE = 7;
+    localparam integer ROM_SIZE = 11;
 
     (* rom_style = "block" *) machine_t machines[0:ROM_SIZE - 1] = {
         scan(1),
         print(1, 33'h1_0000_0000 + 0),
         rm(4'hf, 1, 2, 0),
         wm(4'hf, 1, 2, 0),
+        rmr(4'hf, 16, 2, 33'h1_0000_0000 + 0),
+        rmr(4'hf, 1, 2, 33'h1_0000_0000 + 32'hfffffffc),
+        wmr(4'hf, 16, 2, 33'h1_0000_0000 + 8),
+        wmr(4'hf, 1, 2, 33'h1_0000_0000 + 32'h10),
         brm(4'hf, 1, 2, 3, 0),
         bwm(4'hf, 1, 2, 3, 0),
-        jmp(0, 33'h1_0000_0000 + 6)
+        jmp(0, 33'h1_0000_0000 + 10)
     };
 
     always_ff @(posedge clk) begin
