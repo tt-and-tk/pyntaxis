@@ -1,0 +1,8 @@
+; wmrのイミディエイトデータ省略 → エラーになるべき
+; wmrは番地をrs1+immで求めるため，immを省略できない
+
+.global main
+
+main:
+    wmr fh r16 r1
+    ret
