@@ -467,21 +467,12 @@ void output_instruction_line(
             throw "asm syntax error: too many arguments '" + command + "'";
         }
 
-        // jmpはconvert_argが即値プレフィックス付きのラベル参照を返す
-        if (command == "jmp") {
-            const std::string label_ref = convert_arg(
+        // jmpの飛び先ラベル・callの呼び出し先関数名は，convert_argが即値プレフィックス付きの参照を返す
+        if (command == "jmp" || functions.find(target) != functions.end()) {
+            const std::string target_ref = convert_arg(
                 functions, target, commands.at(command), 0, command
             );
-            instructions.push_back("jmp(0, " + label_ref + ")");
-            return;
-        }
-
-        // 呼び出し先が関数名なら，関数参照(@func@)に即値プレフィックスを付けて即値で渡す
-        if (functions.find(target) != functions.end()) {
-            const std::string function_ref = convert_arg(
-                functions, target, commands.at(command), 0, command
-            );
-            instructions.push_back("call(0, 33'h1_0000_0000 + " + function_ref + ")");
+            instructions.push_back(command + "(0, " + target_ref + ")");
             return;
         }
 
@@ -622,16 +613,10 @@ std::string convert_arg(
         (arg_type == arg_t::FUNC_NAME || arg_type == arg_t::RAW_DATA)
         && functions.find(converted_arg) != functions.end()
     ) {
-        // 関数名を区切り文字で囲む
+        // 関数名を区切り文字で囲み，先頭indexを即値として渡すため即値使用フラグを立てて返す
         // function_name2line_num が囲まれたトークンだけを行番号へ置換するため，
         // 関数名が命令名や数値の一部と一致して誤置換されることを防げる
-        const std::string function_ref = FUNC_REF_DELIM + converted_arg + FUNC_REF_DELIM;
-
-        // 即値の位置なら即値使用フラグを立てる
-        // (関数名の位置はcallがrs1とあわせて組み立てるため，ここではフラグを付けない)
-        if (arg_type == arg_t::RAW_DATA) return "33'h1_0000_0000 + " + function_ref;
-
-        return function_ref;
+        return std::string("33'h1_0000_0000 + ") + FUNC_REF_DELIM + converted_arg + FUNC_REF_DELIM;
     }
 
     // 引数がレジスタなら
