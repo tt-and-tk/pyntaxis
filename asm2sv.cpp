@@ -46,6 +46,7 @@ static void validate_arg_count(                                          // 引�
 static std::string get_machine_function_name(const std::string &command); // machine.svh側の関数名へ変換する
 static bool is_digits_of_base(const std::string &digits, const int base); // 全ての桁がその基数で表せるか
 static bool is_number_notation(const std::string &word);                 // 数値表記(基数接尾辞を含む)として妥当か
+static bool is_negative_notation(const std::string &word);               // 負の数値表記('-'+10進)として妥当か
 static bool is_register_notation(const std::string &word);               // レジスタ表記('r'+数値表記)として妥当か
 static void throw_if_tab(const std::string &line);                       // タブ文字があればエラーにする
 static void resolve_labels(                                              // 局所ラベル参照を絶対index/相対オフセットに解決する
@@ -319,7 +320,10 @@ void get_function_names(
 
         // 数値表記・レジスタ表記と同じ綴りなら
         // 即値・レジスタの位置に書いたときどちらとも解釈できるため，宣言の時点で受け付けない
-        if (is_number_notation(function_name) || is_register_notation(function_name)) {
+        if (
+            is_number_notation(function_name) || is_negative_notation(function_name)
+            || is_register_notation(function_name)
+        ) {
             throw "asm syntax error: function name conflicts with number or register notation '" + function_name + "'";
         }
 
@@ -578,6 +582,11 @@ bool is_number_notation(const std::string &word) {
     }
 }
 
+// 負の数値表記として妥当かを返す('-'に10進の桁が続く形．基数接尾辞は付けられない)
+bool is_negative_notation(const std::string &word) {
+    return !word.empty() && word[0] == '-' && is_digits_of_base(word.substr(1), 10);
+}
+
 // レジスタ表記として妥当かを返す('r'に数値表記が続く形)
 bool is_register_notation(const std::string &word) {
     return !word.empty() && word[0] == 'r' && is_number_notation(word.substr(1));
@@ -643,7 +652,7 @@ std::string convert_arg(
     // 負の値は即値だけが取り，基数接尾辞を持たない10進表記に限る
     // (接尾辞付きの負数は基数の書き直しが符号を巻き込み 32'h-4 のような不正な出力になるため)
     if (converted_arg[0] == '-') {
-        if (arg_type != arg_t::RAW_DATA || !is_digits_of_base(converted_arg.substr(1), 10)) {
+        if (arg_type != arg_t::RAW_DATA || !is_negative_notation(converted_arg)) {
             throw "asm syntax error: fail number notation '" + arg + "'";
         }
     }
