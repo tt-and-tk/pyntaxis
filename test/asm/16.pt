@@ -9,7 +9,7 @@ main:
     call r1              ; r1の値を呼び出し先とする(rs1=1，即値使用フラグなし)
     mov fh r0 r2 rx      ; r2 = rxの先頭index
     call r2h             ; レジスタ番号は基数付きでも書ける
-    wm fh r0 r1 rx       ; 番地を表す即値にも関数名を書ける
+    wm fh r0 r1 rx       ; 即値の位置であれば命令を問わず関数名が解決される
     rmr fh r16 r3 func1  ; 即値が必須の命令でも即値使用フラグが立つ
     call rx              ; 関数名の呼び出し先は従来どおり即値で渡す
     ret
