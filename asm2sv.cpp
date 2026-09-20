@@ -453,10 +453,10 @@ void output_instruction_line(
 
     // 命令がcall/jmpなら
     // 飛び先をrs1・即値のどちらへ置くかを命令ごとに決める特殊な出力形のため，汎用経路に乗らない
-    // call: 呼び出し先pcを即値またはrs1で渡す（戻り先保存やSP更新はCPU側が行う）
+    // call: 呼び出し先pcを即値またはrs1で渡す(戻り先保存やSP更新はCPU側が行う)
     // jmp : 飛び先（局所ラベルの絶対index）を即値で渡す
     if (command == "call" || command == "jmp") {
-        // 引数前のスペースを除去してターゲット（呼び出し先関数名／レジスタ，飛び先ラベル）を取得
+        // 引数前のスペースを除去してターゲット(呼び出し先関数名／レジスタ，飛び先ラベル)を取得
         line = ltrim(line.substr(std::min(command.length() + 1, line.length())));
         const int first_space = str_find_first_of(line, ' ');
         const std::string target = line.substr(0, first_space);
@@ -482,7 +482,7 @@ void output_instruction_line(
         }
 
         // 呼び出し先がレジスタなら，その値をそのままPCとさせるためrs1で渡す
-        // 即値使用フラグは立てない（CPUはフラグが立っていなければrs1をPCとする）
+        // 即値使用フラグは立てない(CPUはフラグが立っていなければrs1をPCとする)
         const std::string register_num = convert_arg(
             functions, target, call_register_arg, 0, command
         );
@@ -548,12 +548,12 @@ std::string get_machine_function_name(const std::string &command) {
     return command;
 }
 
-// 全ての桁がその基数で表せるかを返す（桁が一つもなければ数値ではないとする）
+// 全ての桁がその基数で表せるかを返す(桁が一つもなければ数値ではないとする)
 bool is_digits_of_base(const std::string &digits, const int base) {
     if (digits.empty()) return false;
 
     for (const char digit : digits) {
-        // 16進数ではa〜f（A〜F）も桁として使える
+        // 16進数ではa〜f(A〜F)も桁として使える
         const int value = ('0' <= digit && digit <= '9') ? digit - '0'
                         : ('a' <= digit && digit <= 'f') ? digit - 'a' + 10
                         : ('A' <= digit && digit <= 'F') ? digit - 'A' + 10
@@ -578,7 +578,7 @@ bool is_number_notation(const std::string &word) {
     }
 }
 
-// レジスタ表記として妥当かを返す（'r'に数値表記が続く形）
+// レジスタ表記として妥当かを返す('r'に数値表記が続く形)
 bool is_register_notation(const std::string &word) {
     return !word.empty() && word[0] == 'r' && is_number_notation(word.substr(1));
 }
@@ -653,7 +653,7 @@ std::string convert_arg(
         throw "asm syntax error: fail number notation '" + arg + "'";
     }
 
-    // 引数が十進数表記ではない（末尾が基数接尾辞）なら，Verilogでの表記に書き直す
+    // 引数が十進数表記ではない(末尾が基数接尾辞)なら，Verilogでの表記に書き直す
     const char last = converted_arg[converted_arg.length() - 1];
     if (last == 'b' || last == 'o' || last == 'h') {
         converted_arg = get_bit_length_of_command(arg_type)
