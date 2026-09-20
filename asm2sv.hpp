@@ -69,11 +69,11 @@ const std::map<std::string, command_arg_t> commands = {
     // メモリ系(M系)
     {"rm"   ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
     {"wm"   ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
+    {"brm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
+    {"bwm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
     // RMR/WMRはrs1とimmを足した番地を読み書きするため，immを含めた4個の引数で固定する(省略不可)
     {"rmr"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, true , true }},
     {"wmr"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, true , true }},
-    {"brm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"bwm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
 
     // 標準入出力系(IO系)
     {"scan" ,  {1, {                                                   arg_t::REGISTER}, false, false}},

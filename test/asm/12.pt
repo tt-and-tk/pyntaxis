@@ -7,11 +7,11 @@ main:
     print r1 0
     rm fh r1 r2
     wm fh r1 r2
+    brm fh r1 r2 r3
+    bwm fh r1 r2 r3
     rmr fh r16 r2 0      ; SP相対・オフセット0
     rmr fh r1 r2 -4      ; 負のオフセット(10進)
     wmr fh r16 r2 8      ; SP相対・正のオフセット
     wmr fh r1 r2 10h     ; 16進のオフセット
     rmr 1h r16 r2 4      ; 最下位1バイトのみ読み込む
-    brm fh r1 r2 r3
-    bwm fh r1 r2 r3
     ret
