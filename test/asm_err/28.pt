@@ -1,0 +1,8 @@
+; rmrの引数過多 → エラーになるべき
+; rmrの引数はmask・rs1・rd・immの4個で固定
+
+.global main
+
+main:
+    rmr fh r16 r2 0 4
+    ret
