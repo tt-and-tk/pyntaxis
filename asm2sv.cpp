@@ -35,7 +35,7 @@ static void output_instruction_line(                                            
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
 );
-static std::vector<std::string> split_args(std::string line);            // 引数部分を空白区切りで取り出す（コメント以降は読まない）
+static std::vector<std::string> split_args(std::string line);            // 引数部分を空白区切りで取り出す(コメント以降は読まない)
 static const command_form_t &select_form(                                // 書かれた引数に合う引数形式を選ぶ
     const std::map<std::string, std::size_t> &functions,
     const std::vector<command_form_t> &forms, const std::vector<std::string> &args,
@@ -46,10 +46,10 @@ static bool matches_form(                                                // 書�
     const command_form_t &form, const std::vector<std::string> &args
 );
 static int written_arg_num(const command_form_t &form);                  // 形式がアセンブリ上で取る引数の個数
-static std::string form_usage(                                           // 引数形式の書き方（エラーメッセージ用）
+static std::string form_usage(                                           // 引数形式の書き方(エラーメッセージ用)
     const std::string &command, const command_form_t &form
 );
-static std::string arg_type_name(const arg_t arg_type);                  // 引数の種類の名前（エラーメッセージ用）
+static std::string arg_type_name(const arg_t arg_type);                  // 引数の種類の名前(エラーメッセージ用)
 static std::string get_bit_length_of_command(const arg_t arg_type);      // 引数タイプごとのビット数を返す
 static std::string convert_arg(                                          // 機械語関数の引数を加工して返す
     const std::map<std::string, std::size_t> &functions,
@@ -496,7 +496,7 @@ void output_instruction_line(
     instructions.push_back(instr);
 }
 
-// アセンブリ一行の引数部分を空白区切りで取り出す（コメント以降は読まない）
+// アセンブリ一行の引数部分を空白区切りで取り出す(コメント以降は読まない)
 std::vector<std::string> split_args(std::string line) {
     std::vector<std::string> args;    // 書かれた引数一覧
 
@@ -562,7 +562,7 @@ const command_form_t &select_form(
     // 合う形式があればそれを使う
     if (matched != nullptr) return *matched;
 
-    // どの形式にも合わない（callの呼び出し先が関数名でもレジスタでもない場合など）
+    // どの形式にも合わない(callの呼び出し先が関数名でもレジスタでもない場合など)
     // 何を書けるかが分かるよう，個数の合う形式の書き方を並べて示す
     std::string expected;
     for (const command_form_t *form : candidates) {
@@ -572,7 +572,7 @@ const command_form_t &select_form(
     throw "asm syntax error: fail arguments '" + written + "' (expected " + expected + ")";
 }
 
-// 引数形式の書き方を「命令 <引数の種類>…」の形で返す（エラーメッセージ用）
+// 引数形式の書き方を「命令 <引数の種類>…」の形で返す(エラーメッセージ用)
 std::string form_usage(const std::string &command, const command_form_t &form) {
     std::string usage = command;
 
@@ -586,7 +586,7 @@ std::string form_usage(const std::string &command, const command_form_t &form) {
     return usage;
 }
 
-// 引数の種類の名前を返す（エラーメッセージ用）
+// 引数の種類の名前を返す(エラーメッセージ用)
 std::string arg_type_name(const arg_t arg_type) {
     switch (arg_type) {
         case arg_t::REGISTER:  return "register";
@@ -650,7 +650,7 @@ bool matches_form(
     return true;
 }
 
-// 形式がアセンブリ上で取る引数の個数を返す（ZEROは機械語側だけの引数なので数えない）
+// 形式がアセンブリ上で取る引数の個数を返す(ZEROは機械語側だけの引数なので数えない)
 int written_arg_num(const command_form_t &form) {
     int num = 0;
 
