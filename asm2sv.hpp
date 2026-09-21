@@ -107,9 +107,6 @@ std::string get_bit_length_of_command(const arg_t arg) {
         case arg_t::RAW_DATA:
             return std::to_string(32);
 
-        case arg_t::LABEL:
-            return std::to_string(32);
-
         case arg_t::MASK:
             return std::to_string(4);
 
