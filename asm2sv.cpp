@@ -35,13 +35,20 @@ static void output_instruction_line(                                            
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
 );
-static std::string convert_arg(                                          // 機械語関数の引数を加工して返す
+static std::vector<std::string> split_args(std::string line);            // 引数部分を空白区切りで取り出す（コメント以降は読まない）
+static const command_form_t &select_form(                                // 書かれた引数に合う引数形式を選ぶ
     const std::map<std::string, std::size_t> &functions,
-    const std::string &arg, const command_arg_t &command_arg, const int arg_num,
+    const std::vector<command_form_t> &forms, const std::vector<std::string> &args,
     const std::string &command
 );
-static void validate_arg_count(                                          // 引数の個数が命令の仕様に合うか検証する
-    const command_arg_t &command_arg, const int arg_num, const std::string &command
+static bool matches_form(                                                // 書かれた引数がその形式の書き方に合うか
+    const std::map<std::string, std::size_t> &functions,
+    const command_form_t &form, const std::vector<std::string> &args
+);
+static int written_arg_num(const command_form_t &form);                  // 形式がアセンブリ上で取る引数の個数
+static std::string convert_arg(                                          // 機械語関数の引数を加工して返す
+    const std::map<std::string, std::size_t> &functions,
+    const std::string &arg, const arg_t arg_type, const std::string &command
 );
 static std::string get_machine_function_name(const std::string &command); // machine.svh側の関数名へ変換する
 static bool is_digits_of_base(const std::string &digits, const int base); // 全ての桁がその基数で表せるか
@@ -455,89 +462,146 @@ void output_instruction_line(
         throw "asm syntax error: fail command '" + command + "'";
     }
 
-    // 命令がcall/jmpなら
-    // 飛び先をrs1・即値のどちらへ置くかを命令と引数の種類で決める特殊な出力形のため，汎用経路に乗らない
-    // call: 呼び出し先pcを即値またはrs1で渡す(戻り先保存やSP更新はCPU側が行う)
-    // jmp : 飛び先（局所ラベルの絶対index）を即値で渡す
-    if (command == "call" || command == "jmp") {
-        // 引数前のスペースを除去してターゲット(呼び出し先関数名／レジスタ，飛び先ラベル)を取得
-        line = ltrim(line.substr(std::min(command.length() + 1, line.length())));
-        const int first_space = str_find_first_of(line, ' ');
-        const std::string target = line.substr(0, first_space);
-
-        // 引数は1つだけ．ターゲットの後に（コメント以外の）余分な引数があればエラー
-        const std::string rest = ltrim(line.substr(first_space));
-        if (!rest.empty() && rest[0] != ';') {
-            throw "asm syntax error: too many arguments '" + command + "'";
-        }
-
-        // jmpの飛び先ラベル・callの呼び出し先関数名は，convert_argが即値プレフィックス付きの参照を返す
-        if (command == "jmp" || functions.find(target) != functions.end()) {
-            const std::string target_ref = convert_arg(
-                functions, target, commands.at(command), 0, command
-            );
-            instructions.push_back(command + "(0, " + target_ref + ")");
-            return;
-        }
-
-        // 関数名でもレジスタ表記でもないなら，未宣言の関数などの誤りとしてエラーにする
-        if (!is_register_notation(target)) {
-            throw "asm syntax error: call target must be a function name or a register '" + target + "'";
-        }
-
-        // 呼び出し先がレジスタなら，その値をそのままPCとさせるためrs1で渡す
-        // 即値使用フラグは立てない(CPUはフラグが立っていなければrs1をPCとする)
-        const std::string register_num = convert_arg(
-            functions, target, call_register_arg, 0, command
-        );
-        instructions.push_back("call(" + register_num + ", 0)");
-        return;
-    }
-
-    // 命令の引数仕様
-    const command_arg_t &command_arg = commands.at(command);
+    // 書かれた引数を取り出し，それに合う引数形式を選ぶ
+    const std::vector<std::string> args = split_args(
+        line.substr(std::min(command.length() + 1, line.length()))  // 引数がなかった時のためstd::min
+    );
+    const command_form_t &form = select_form(functions, commands.at(command), args, command);
 
     // 命令本体を組み立てる
     std::string instr = get_machine_function_name(command) + "(";
 
-    // 引数を取得
+    // 機械語の引数を形式の順に並べる
+    // ZEROは0を出し，それ以外は書かれた引数を先頭から順に受け取る
     int arg_num = 0;
-    line = line.substr(std::min(command.length() + 1, line.length()));  // 引数がなかった時のためstd::min
-    while (!line.empty() && line[0] != ';') {
-        // スペースを飛ばす
-        if (line[0] == ' ') {
-            line = line.substr(1);
+    for (std::size_t i = 0; i < form.size(); i++) {
+        if (i != 0) instr += ", ";
+
+        if (form[i] == arg_t::ZERO) {
+            instr += "0";
             continue;
         }
 
-        // 引数が引数仕様の個数より多い（arg_typesの範囲外アクセスを防ぐ）
-        if (arg_num >= static_cast<int>(command_arg.arg_types.size())) {
-            throw "asm syntax error: too many arguments '" + command + "'";
-        }
-
-        // 引数を追加
-        if (arg_num != 0) instr += ", ";
-        int first_space = str_find_first_of(line, ' ');
-        instr += convert_arg(
-            functions, line.substr(0, first_space), command_arg, arg_num, command
-        );
-
-        // 次のループの準備
-        line = line.substr(first_space);  // 引数直後のスペースは飛ばさない．最後の引数である可能性があるため
+        instr += convert_arg(functions, args[arg_num], form[i], command);
         arg_num++;
-    }
-
-    // 引数の数があっているか確認
-    validate_arg_count(command_arg, arg_num, command);
-
-    // immあり・未出力なら，0にしておく
-    if (command_arg.has_imm && !command_arg.imm_required && (arg_num == command_arg.arg_num_min)) {
-        instr += ", 0";
     }
 
     // 命令を閉じて追加する
     instr += ")";
     instructions.push_back(instr);
+}
+
+// アセンブリ一行の引数部分を空白区切りで取り出す（コメント以降は読まない）
+std::vector<std::string> split_args(std::string line) {
+    std::vector<std::string> args;    // 書かれた引数一覧
+
+    while (true) {
+        // 引数前のスペースを除去し，引数が尽きるかコメントに達したら終わる
+        line = ltrim(line);
+        if (line.empty() || line[0] == ';') break;
+
+        // 次のスペースまでを引数一つとして取り出す
+        const int first_space = str_find_first_of(line, ' ');
+        args.push_back(line.substr(0, first_space));
+        line = line.substr(first_space);
+    }
+
+    return args;
+}
+
+// 書かれた引数に合う引数形式を選ぶ
+// まず引数の個数で絞り，同数の形式が複数ある場合（callの関数名／レジスタ）は書き方で決める
+const command_form_t &select_form(
+    const std::map<std::string, std::size_t> &functions,
+    const std::vector<command_form_t> &forms, const std::vector<std::string> &args,
+    const std::string &command
+) {
+    // エラーメッセージ用に，書かれた命令一行を組み立てておく
+    std::string written = command;
+    for (const std::string &arg : args) written += " " + arg;
+
+    // 引数の個数が合う形式を集める
+    std::vector<const command_form_t *> candidates;
+    for (const command_form_t &form : forms) {
+        if (written_arg_num(form) == static_cast<int>(args.size())) candidates.push_back(&form);
+    }
+
+    // 個数の合う形式がなければ，引数の個数の誤り
+    if (candidates.empty()) {
+        throw "asm syntax error: fail argument count '" + written + "'";
+    }
+
+    // 個数の合う形式が一つなら，引数の中身の誤りはconvert_argが種類ごとに報告する
+    if (candidates.size() == 1) return *candidates[0];
+
+    // 複数あるなら書き方で選ぶ
+    // 関数名は数値表記・レジスタ表記と同じ綴りにできないため，合う形式は高々一つに定まる
+    for (const command_form_t *form : candidates) {
+        if (matches_form(functions, *form, args)) return *form;
+    }
+
+    // どの形式にも合わない（callの呼び出し先が関数名でもレジスタでもない場合など）
+    throw "asm syntax error: fail arguments '" + written + "'";
+}
+
+// 書かれた引数がその形式の書き方に合うかを返す
+// ここでは綴りが解決できるかだけを見て，値の妥当性の検証はconvert_argに任せる
+bool matches_form(
+    const std::map<std::string, std::size_t> &functions,
+    const command_form_t &form, const std::vector<std::string> &args
+) {
+    int arg_num = 0;    // 照合中の引数の番号
+
+    for (const arg_t arg_type : form) {
+        // ZEROは書かれた引数を取らない
+        if (arg_type == arg_t::ZERO) continue;
+
+        const std::string &arg = args[arg_num];
+        arg_num++;
+
+        switch (arg_type) {
+            // 関数名は関数表にあるもののみ
+            case arg_t::FUNC_NAME:
+                if (functions.find(arg) == functions.end()) return false;
+                break;
+
+            // レジスタは'r'に数値表記が続く形のみ
+            case arg_t::REGISTER:
+                if (!is_register_notation(arg)) return false;
+                break;
+
+            // 局所ラベルは先頭が'.'
+            case arg_t::LABEL:
+                if (arg.empty() || arg[0] != '.') return false;
+                break;
+
+            // 即値は数値表記か，先頭indexに解決される関数名
+            case arg_t::RAW_DATA:
+                if (
+                    !is_number_notation(arg) && !is_negative_notation(arg)
+                    && functions.find(arg) == functions.end()
+                ) return false;
+                break;
+
+            // マスクは数値表記のみ
+            default:
+                if (!is_number_notation(arg)) return false;
+                break;
+        }
+    }
+
+    return true;
+}
+
+// 形式がアセンブリ上で取る引数の個数を返す（ZEROは機械語側だけの引数なので数えない）
+int written_arg_num(const command_form_t &form) {
+    int num = 0;
+
+    for (const arg_t arg_type : form) {
+        if (arg_type != arg_t::ZERO) num++;
+    }
+
+    return num;
 }
 
 // ニーモニックをmachine.svh側の関数名に変換する
@@ -595,11 +659,9 @@ bool is_register_notation(const std::string &word) {
 // 機械語関数の引数を加工して返す
 std::string convert_arg(
     const std::map<std::string, std::size_t> &functions,
-    const std::string &arg, const command_arg_t &command_arg, const int arg_num,
-    const std::string &command
+    const std::string &arg, const arg_t arg_type, const std::string &command
 ) {
-    std::string converted_arg = arg;                          // 引数は加工できないので，加工用の変数を用意
-    const arg_t arg_type = command_arg.arg_types[arg_num];    // この引数に求められる種類
+    std::string converted_arg = arg;   // 引数は加工できないので，加工用の変数を用意
 
     // 引数が局所ラベルなら (jmp/F系の飛び先)
     // 飛び先は局所ラベルのみ．ここではプレースホルダを埋め，resolve_labelsで実値に解決する
@@ -682,22 +744,6 @@ std::string convert_arg(
 
     // 加工した引数を返す
     return converted_arg;
-}
-
-// 引数の個数が命令の仕様に合うか検証する
-void validate_arg_count(
-    const command_arg_t &command_arg, const int arg_num, const std::string &command
-) {
-    if (
-        // イミディエイトデータが必須で，引数の個数が違う
-        (command_arg.imm_required && arg_num != command_arg.arg_num_min)
-        // immあり・省略可で，引数の個数が違う（arg_num_min または arg_num_min+1 が有効）
-        || (!command_arg.imm_required && command_arg.has_imm && arg_num != command_arg.arg_num_min && arg_num != command_arg.arg_num_min + 1)
-        // immなしで，引数の個数が違う（arg_num_min のみ有効）
-        || (!command_arg.imm_required && !command_arg.has_imm && arg_num != command_arg.arg_num_min)
-    ) {
-        throw "asm syntax error: fail program " + command + " " + std::to_string(arg_num);
-    }
 }
 
 // タブ文字があればエラーにする

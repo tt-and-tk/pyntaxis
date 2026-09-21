@@ -11,80 +11,94 @@ enum class arg_t {
     FUNC_NAME,   // 関数名
     LABEL,       // 局所ラベル名 (jmpは絶対index，F系は相対オフセットに解決される)
     MASK,        // ビットマスク
+    ZERO,        // アセンブリ上の引数を取らず，機械語の引数を0で埋める
 };
 
-// 各命令の引数情報
-typedef struct {
-    const int arg_num_min;    // とりうる引数の最小の個数(イミディエイトデータがある場合は引数の数はこれプラス1になる)
-    const std::vector<arg_t> arg_types;  // それぞれの引数の種類
-    const bool imm_required;  // 機械語側でイミディエイトデータが必須かどうか(必須な場合，引数の個数はarg_num_minから変動しない)
-    const bool has_imm;       // machine.svh関数のimmパラメータを持つか(falseの場合，immは出力しない)
-} command_arg_t;
+// 一つの引数形式
+// 機械語の引数の並びを表し，ZERO以外の要素がアセンブリに書かれた引数を順に受け取る
+typedef std::vector<arg_t> command_form_t;
 
-// 機械語の命令一覧
-const std::map<std::string, command_arg_t> commands = {
+// 機械語の命令一覧(命令ごとに，取りうる引数形式を並べる)
+// 同じ命令の形式どうしは引数の個数か書き方で区別でき，両方に合う書き方は存在しない
+const std::map<std::string, std::vector<command_form_t>> commands = {
     // 処理を実行しない(N系)
-    {"nop"  ,  {0, {                                                                  }, false, false}},
+    {"nop"  , {{                                                                              }}},
 
     // 演算系(P系)
-    {"and"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
-    {"or"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
-    {"xor"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
-    {"not"  ,  {2, {arg_t::REGISTER, arg_t::REGISTER,                                 }, false, false}},
-    {"nand" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
-    {"add"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
-    {"sub"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
-    {"mul"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                 }, false, false}},
-    {"div"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"divu" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
+    {"and"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                             }}},
+    {"or"   , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                             }}},
+    {"xor"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                             }}},
+    {"not"  , {{arg_t::REGISTER, arg_t::REGISTER                                              }}},
+    {"nand" , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                             }}},
+    {"add"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                             }}},
+    {"sub"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                             }}},
+    {"mul"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER                             }}},
+    // 商のみ必要なら即値を省略し，余りも必要ならその格納先のレジスタ番地を即値で指定する
+    {"div"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
+    {"divu" , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
 
     // シフト系(S系)
-    {"sll"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"srl"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"sla"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"sra"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
+    // シフト量はrs2で指定するか，即値で指定する
+    {"sll"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
+    {"srl"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
+    {"sla"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
+    {"sra"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
 
     // 代入系(A系)
-    {"mov"  ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},  // MASKはCPU側で未実装(値に関わらず動作は変わらず，常に全バイトへ書き込まれる)
+    // MASKはCPU側で未実装(値に関わらず動作は変わらず，常に全バイトへ書き込まれる)
+    {"mov"  , {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
 
     // 分岐系(F系)
     // 飛び先は局所ラベルのみ(相対オフセットに解決される)
-    {"eq"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"ne"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"lt"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"gt"   ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"elt"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"egt"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"ltu"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"gtu"  ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"eltu" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
-    {"egtu" ,  {3, {arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                    }, true , true }},
+    {"eq"   , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"ne"   , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"lt"   , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"gt"   , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"elt"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"egt"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"ltu"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"gtu"  , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"eltu" , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
+    {"egtu" , {{arg_t::REGISTER, arg_t::REGISTER, arg_t::LABEL                                }}},
 
     // ジャンプ系(J系)
     // jmpの飛び先は局所ラベルのみ(絶対indexに解決される)．レジスタ・数値による飛び先指定は持たない
-    {"jmp"  ,  {1, {arg_t::LABEL                                                      }, true , true }},
-    {"call" ,  {1, {arg_t::FUNC_NAME                                                  }, false, false}},  // 引数は呼び出し先の関数名またはレジスタ．出力は output_instruction_line で特別に組み立てる
-    {"ret"  ,  {0, {                                                                  }, false, false}},  // 引数なし。汎用経路が machine::ret() を生成する
+    {"jmp"  , {{arg_t::ZERO    , arg_t::LABEL                                                 }}},
+    // callの呼び出し先は，関数名なら先頭indexを即値で渡し，レジスタならその値をそのままPCとする
+    {"call" , {{arg_t::ZERO    , arg_t::FUNC_NAME                                             },
+               {arg_t::REGISTER, arg_t::ZERO                                                  }}},
+    {"ret"  , {{                                                                              }}},
 
     // メモリ系(M系)
-    {"rm"   ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"wm"   ,  {3, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"brm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    {"bwm"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, false, true }},
-    // RMR/WMRはrs1とimmを足した番地を読み書きするため，immを含めた4個の引数で固定する(省略不可)
-    {"rmr"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, true , true }},
-    {"wmr"  ,  {4, {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}, true , true }},
+    // rm/wmは番地をrs1で指定するか，即値で指定する
+    {"rm"   , {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
+    {"wm"   , {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO                },
+               {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
+    {"brm"  , {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO    },
+               {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}}},
+    {"bwm"  , {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::ZERO    },
+               {arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA}}},
+    // RMR/WMRはrs1とimmを足した番地を読み書きするため，即値を省略した形を持たない
+    {"rmr"  , {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
+    {"wmr"  , {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}},
 
     // 標準入出力系(IO系)
-    {"scan" ,  {1, {                                                   arg_t::REGISTER}, false, false}},
-    {"print",  {1, {arg_t::REGISTER,                                   arg_t::RAW_DATA}, false, true }},
+    // printは出力する値をrs1で指定するか，即値で指定する
+    {"scan" , {{arg_t::REGISTER                                                               }}},
+    {"print", {{arg_t::REGISTER, arg_t::ZERO                                                  },
+               {arg_t::REGISTER, arg_t::RAW_DATA                                              }}},
 };
 
-// 呼び出し先をレジスタで指定したcallの引数仕様
-// commands表のcallは関数名で指定する形を表すため，レジスタ指定はこちらの仕様で引数を変換する
-const command_arg_t call_register_arg = {1, {arg_t::REGISTER}, false, false};
-
 // 引数タイプごとのビット数を返す
+// 数値表記を書ける引数のみが対象(関数名・局所ラベルは表を引いて解決するため数値の桁数を持たない)
 std::string get_bit_length_of_command(const arg_t arg) {
     switch (arg) {
         case arg_t::REGISTER:
@@ -92,9 +106,6 @@ std::string get_bit_length_of_command(const arg_t arg) {
 
         case arg_t::RAW_DATA:
             return std::to_string(32);
-
-        case arg_t::FUNC_NAME:
-            return std::to_string(6);
 
         case arg_t::LABEL:
             return std::to_string(32);
