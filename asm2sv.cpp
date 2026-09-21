@@ -46,6 +46,10 @@ static bool matches_form(                                                // 書�
     const command_form_t &form, const std::vector<std::string> &args
 );
 static int written_arg_num(const command_form_t &form);                  // 形式がアセンブリ上で取る引数の個数
+static std::string form_usage(                                           // 引数形式の書き方（エラーメッセージ用）
+    const std::string &command, const command_form_t &form
+);
+static std::string arg_type_name(const arg_t arg_type);                  // 引数の種類の名前（エラーメッセージ用）
 static std::string convert_arg(                                          // 機械語関数の引数を加工して返す
     const std::map<std::string, std::size_t> &functions,
     const std::string &arg, const arg_t arg_type, const std::string &command
@@ -527,8 +531,14 @@ const command_form_t &select_form(
     }
 
     // 個数の合う形式がなければ，引数の個数の誤り
+    // 何個書けるかが分かるよう，その命令の全ての形式の書き方を示す
     if (candidates.empty()) {
-        throw "asm syntax error: fail argument count '" + written + "'";
+        std::string expected;
+        for (const command_form_t &form : forms) {
+            if (!expected.empty()) expected += " or ";
+            expected += "'" + form_usage(command, form) + "'";
+        }
+        throw "asm syntax error: fail argument count '" + written + "' (expected " + expected + ")";
     }
 
     // 個数の合う形式が一つなら，引数の中身の誤りはconvert_argが種類ごとに報告する
@@ -541,7 +551,42 @@ const command_form_t &select_form(
     }
 
     // どの形式にも合わない（callの呼び出し先が関数名でもレジスタでもない場合など）
-    throw "asm syntax error: fail arguments '" + written + "'";
+    // 何を書けるかが分かるよう，個数の合う形式の書き方を並べて示す
+    std::string expected;
+    for (const command_form_t *form : candidates) {
+        if (!expected.empty()) expected += " or ";
+        expected += "'" + form_usage(command, *form) + "'";
+    }
+    throw "asm syntax error: fail arguments '" + written + "' (expected " + expected + ")";
+}
+
+// 引数形式の書き方を「命令 <引数の種類>…」の形で返す（エラーメッセージ用）
+std::string form_usage(const std::string &command, const command_form_t &form) {
+    std::string usage = command;
+
+    for (const arg_t arg_type : form) {
+        // ZEROは書かれた引数を取らないため，書き方には現れない
+        if (arg_type == arg_t::ZERO) continue;
+
+        usage += " <" + arg_type_name(arg_type) + ">";
+    }
+
+    return usage;
+}
+
+// 引数の種類の名前を返す（エラーメッセージ用）
+std::string arg_type_name(const arg_t arg_type) {
+    switch (arg_type) {
+        case arg_t::REGISTER:  return "register";
+        case arg_t::RAW_DATA:  return "immediate";
+        case arg_t::FUNC_NAME: return "function name";
+        case arg_t::LABEL:     return "local label";
+        case arg_t::MASK:      return "mask";
+
+        default:
+            // 起きないはずのエラーなのでエラーメッセージは適当
+            throw std::string("asm syntax error: arg type is fail");
+    }
 }
 
 // 書かれた引数がその形式の書き方に合うかを返す
