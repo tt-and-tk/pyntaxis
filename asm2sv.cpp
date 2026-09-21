@@ -546,9 +546,18 @@ const command_form_t &select_form(
 
     // 複数あるなら書き方で選ぶ
     // 関数名は数値表記・レジスタ表記と同じ綴りにできないため，合う形式は高々一つに定まる
+    // 二つ以上合うのは表の誤り（個数でも書き方でも区別できない形式を並べた）なので，
+    // 先に合った方を黙って選ばず，表を直せるようエラーにする
+    const command_form_t *matched = nullptr;
     for (const command_form_t *form : candidates) {
-        if (matches_form(functions, *form, args)) return *form;
+        if (!matches_form(functions, *form, args)) continue;
+
+        if (matched != nullptr) {
+            throw "asm syntax error: ambiguous argument form '" + written + "'";
+        }
+        matched = form;
     }
+    if (matched != nullptr) return *matched;
 
     // どの形式にも合わない（callの呼び出し先が関数名でもレジスタでもない場合など）
     // 何を書けるかが分かるよう，個数の合う形式の書き方を並べて示す
