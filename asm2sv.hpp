@@ -96,23 +96,3 @@ const std::map<std::string, std::vector<command_form_t>> commands = {
     {"print", {{arg_t::REGISTER, arg_t::ZERO                                                  },
                {arg_t::REGISTER, arg_t::RAW_DATA                                              }}},
 };
-
-// 引数タイプごとのビット数を返す
-// 数値表記を書ける引数のみが対象(関数名・局所ラベルは表を引いて解決するため数値の桁数を持たない)
-std::string get_bit_length_of_command(const arg_t arg) {
-    switch (arg) {
-        case arg_t::REGISTER:
-            return std::to_string(6);
-
-        case arg_t::RAW_DATA:
-            return std::to_string(32);
-
-        case arg_t::MASK:
-            return std::to_string(4);
-
-        default:
-            // 起きないはずのエラーなのでエラーメッセージは適当
-            throw std::string("asm syntax error: arg type is fail");
-            return "";
-    }
-}

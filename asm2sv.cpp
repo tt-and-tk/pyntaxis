@@ -50,6 +50,7 @@ static std::string form_usage(                                           // 引�
     const std::string &command, const command_form_t &form
 );
 static std::string arg_type_name(const arg_t arg_type);                  // 引数の種類の名前（エラーメッセージ用）
+static std::string get_bit_length_of_command(const arg_t arg_type);      // 引数タイプごとのビット数を返す
 static std::string convert_arg(                                          // 機械語関数の引数を加工して返す
     const std::map<std::string, std::size_t> &functions,
     const std::string &arg, const arg_t arg_type, const std::string &command
@@ -514,7 +515,7 @@ std::vector<std::string> split_args(std::string line) {
 }
 
 // 書かれた引数に合う引数形式を選ぶ
-// まず引数の個数で絞り，同数の形式が複数ある場合（callの関数名／レジスタ）は書き方で決める
+// まず引数の個数で絞り，同数の形式が複数あるなら書き方で決める
 const command_form_t &select_form(
     const std::map<std::string, std::size_t> &functions,
     const std::vector<command_form_t> &forms, const std::vector<std::string> &args,
@@ -545,18 +546,20 @@ const command_form_t &select_form(
     if (candidates.size() == 1) return *candidates[0];
 
     // 複数あるなら書き方で選ぶ
-    // 関数名は数値表記・レジスタ表記と同じ綴りにできないため，合う形式は高々一つに定まる
-    // 二つ以上合うのは表の誤り（個数でも書き方でも区別できない形式を並べた）なので，
-    // 先に合った方を黙って選ばず，表を直せるようエラーにする
-    const command_form_t *matched = nullptr;
+    const command_form_t *matched = nullptr;    // 書き方の合った形式
     for (const command_form_t *form : candidates) {
         if (!matches_form(functions, *form, args)) continue;
 
+        // 二つ以上合うのは，個数でも書き方でも区別できない形式を並べた表の誤り
+        // 先に合った方を黙って選ばず，表を直せるようエラーにする
         if (matched != nullptr) {
             throw "asm syntax error: ambiguous argument form '" + written + "'";
         }
+
         matched = form;
     }
+
+    // 合う形式があればそれを使う
     if (matched != nullptr) return *matched;
 
     // どの形式にも合わない（callの呼び出し先が関数名でもレジスタでもない場合など）
@@ -679,7 +682,7 @@ bool is_digits_of_base(const std::string &digits, const int base) {
         const int value = ('0' <= digit && digit <= '9') ? digit - '0'
                         : ('a' <= digit && digit <= 'f') ? digit - 'a' + 10
                         : ('A' <= digit && digit <= 'F') ? digit - 'A' + 10
-                        : -1;
+                        : -1;  // どの基数の桁でもない文字．次の判定で弾くための値
 
         if (value < 0 || value >= base) return false;
     }
@@ -708,6 +711,25 @@ bool is_negative_notation(const std::string &word) {
 // レジスタ表記として妥当かを返す('r'に数値表記が続く形)
 bool is_register_notation(const std::string &word) {
     return !word.empty() && word[0] == 'r' && is_number_notation(word.substr(1));
+}
+
+// 引数タイプごとのビット数を返す
+// 数値表記を書ける引数のみが対象(関数名・局所ラベルは表を引いて解決するため数値の桁数を持たない)
+std::string get_bit_length_of_command(const arg_t arg_type) {
+    switch (arg_type) {
+        case arg_t::REGISTER:
+            return std::to_string(6);
+
+        case arg_t::RAW_DATA:
+            return std::to_string(32);
+
+        case arg_t::MASK:
+            return std::to_string(4);
+
+        default:
+            // 起きないはずのエラーなのでエラーメッセージは適当
+            throw std::string("asm syntax error: arg type is fail");
+    }
 }
 
 // 機械語関数の引数を加工して返す
