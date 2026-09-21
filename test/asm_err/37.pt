@@ -1,0 +1,11 @@
+; レジスタの位置に関数名を書いた → エラーになるべき
+; 関数名を先頭indexへ解決するのは関数名・即値の位置だけ
+
+.global main, func1
+
+main:
+    add func1 r2 r3
+    ret
+
+func1:
+    ret

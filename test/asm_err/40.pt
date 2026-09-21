@@ -1,0 +1,11 @@
+; jmpの飛び先に関数名を書いた → エラーになるべき
+; jmpの飛び先には局所ラベルしか書けず，関数名は先頭indexに解決されない
+
+.global main, func1
+
+main:
+    jmp func1
+    ret
+
+func1:
+    ret
