@@ -74,7 +74,7 @@ static std::string function_name2line_num(                                // 関
 );
 static void output_footer(std::ofstream &sv_file);                       // svファイルのフッターを出力する
 
-// 出力されるアセンブリプログラムの最大行数
+// 出力されるアセンブリプログラムの最大命令数(空行・コメント・ラベルは数えない)
 // ROM自体に固定容量は無く(ROM_SIZEはこの行数から自動算出する)，プログラムカウンタの
 // ビット幅(14ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える上限(詳細は../specification/limitations.md)
 const int MAX_LINE_NUM = 16384;
