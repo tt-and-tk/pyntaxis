@@ -76,8 +76,8 @@ static void output_footer(std::ofstream &sv_file);                       // sv�
 
 // 出力されるアセンブリプログラムの最大行数
 // ROM自体に固定容量は無く(ROM_SIZEはこの行数から自動算出する)，プログラムカウンタの
-// ビット幅(12ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える上限(詳細は../specification/limitations.md)
-const int MAX_LINE_NUM = 4096;
+// ビット幅(14ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える上限(詳細は../specification/limitations.md)
+const int MAX_LINE_NUM = 16384;
 const char FUNC_REF_DELIM = '@';                  // 出力本体で関数参照を囲む区切り文字（命令名や数値との衝突を防ぐ）
 
 // 局所ラベル参照の仮文字列（プレースホルダ）
