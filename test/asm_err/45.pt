@@ -1,0 +1,9 @@
+; 即値の位置にmainを書いた → エラーになるべき
+; mainの番地をレジスタへ載せると，call r1のような間接呼び出しでmainを呼べてしまう
+
+.global main
+
+main:
+    mov fh r0 r1 main
+    call r1
+    ret

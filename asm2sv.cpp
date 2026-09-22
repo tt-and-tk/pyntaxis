@@ -433,7 +433,7 @@ void assemble_body(
         // アセンブリを機械語にしてinstructionsに追加する
         output_instruction_line(instructions, functions, line);
 
-        // mainはどこからもCALLされず戻り先が無いため，main内のretはすべてプログラムの終了を表す
+        // mainはCALLできず戻り先が無いため，main内のretはすべてプログラムの終了を表す
         // 自分自身へのjmp(無限ループ)に置き換えて，どの経路でmainを抜けても同じ終了状態にする
         // 先頭から最初に現れるretだけを置き換える方式は，早期returnがあると末尾のretが残るため採用しない
         if (current_function == "main" && command == "ret") {
@@ -768,6 +768,13 @@ std::string convert_arg(
         (arg_type == arg_t::FUNC_NAME || arg_type == arg_t::RAW_DATA)
         && functions.find(converted_arg) != functions.end()
     ) {
+        // mainはプログラムの開始点で，呼び出しても戻り先へ復帰できない(main内のretは自分自身へのjmpになる)
+        // 間接呼び出しも防ぐため，callの呼び出し先だけでなく番地の取得もエラーにする
+        if (converted_arg == "main") {
+            if (arg_type == arg_t::FUNC_NAME) throw std::string("asm syntax error: cannot call 'main'");
+            throw std::string("asm syntax error: cannot take the address of 'main'");
+        }
+
         // 関数名を区切り文字で囲み，先頭indexを即値として渡すため即値使用フラグを立てて返す
         // function_name2line_num が囲まれたトークンだけを行番号へ置換するため，
         // 関数名が命令名や数値の一部と一致して誤置換されることを防げる
