@@ -365,11 +365,11 @@ void assemble_body(
         // 空行はスキップ
         if (line == "") continue;
 
-        // 空白のみの行・コメント行はスキップ（main宣言前のコードとして扱わないため）
+        // 空白のみの行・コメント行はスキップ(main宣言前のコードとして扱わないため)
         std::string trimmed = ltrim(line);
         if (trimmed.empty() || trimmed[0] == ';') continue;
 
-        // コメントを除いた部分（コメント内のコロンをラベルと誤認しないため）
+        // コメントを除いた部分(コメント内のコロンをラベルと誤認しないため)
         const std::string code = line.substr(0, line.find(';'));
 
         // ラベル宣言なら
