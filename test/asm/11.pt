@@ -3,7 +3,7 @@
 .global main
 
 main:
-.L1:                ; index 0（後方ジャンプの飛び先）
+.L1:                ; index 0: 後方ジャンプの飛び先
     sll r1 r2 r3
     srl r1 r2 r3
     sla r1 r2 r3

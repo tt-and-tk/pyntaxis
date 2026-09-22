@@ -365,14 +365,17 @@ void assemble_body(
         // 空行はスキップ
         if (line == "") continue;
 
-        // 空白のみの行・コメント行はスキップ（コメント内のコロンをラベルと誤認しないため）
+        // 空白のみの行・コメント行はスキップ(main宣言前のコードとして扱わないため)
         std::string trimmed = ltrim(line);
         if (trimmed.empty() || trimmed[0] == ';') continue;
 
+        // コメントを除いた部分(コメント内のコロンをラベルと誤認しないため)
+        const std::string code = line.substr(0, line.find(';'));
+
         // ラベル宣言なら
-        std::size_t colon_index = line.find_first_of(':');
+        std::size_t colon_index = code.find_first_of(':');
         if (colon_index != std::string::npos) {
-            std::string label_name = line.substr(0, colon_index);
+            std::string label_name = code.substr(0, colon_index);
 
             // 局所ラベル（先頭が '.'）なら，関数とは別に位置だけ記録する
             // 命令は生成せず，.global 照合・main先頭チェック・ret追跡の対象外
