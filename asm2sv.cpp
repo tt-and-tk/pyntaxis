@@ -327,7 +327,7 @@ void get_function_names(
             function_name.pop_back();
         }
 
-        // 空の要素なら(連続・先頭・末尾のカンマ)
+        // 空の要素なら(カンマの前後や.globalの後に関数名がない)
         // 空文字列を関数名として登録すると，無関係な箇所のエラーや `:` のみの行の受理につながる
         if (function_name.empty()) {
             throw "asm syntax error: empty function name in .global '" + line + "'";
