@@ -313,6 +313,7 @@ void get_function_names(
     }
 
     // 関数の羅列部分を取得
+    // lineを上書きしないのは，エラーメッセージで.globalを含む行全体を示すため
     const std::string names = line.substr(strlen(".global "));
 
     // 関数名一覧を取得(カンマで区切った各要素を関数名とする)
