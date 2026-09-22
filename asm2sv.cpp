@@ -313,21 +313,24 @@ void get_function_names(
     }
 
     // 関数の羅列部分を取得
-    line = line.substr(strlen(".global "));
+    const std::string names = line.substr(strlen(".global "));
 
-    // 関数名一覧を取得
-    for (int i = 0; i < static_cast<int>(line.length()); i++) {
-        // スペースならスキップ
-        if (line[i] == ' ') continue;
-
-        // スペース以外なら，カンマまでを関数名として記録
-        std::string word = line.substr(i);        // 厳密には一単語ではないが便宜上wordと呼ぶ
-        int last_index = str_find_first_of(word, ',');
-        std::string function_name = word.substr(0, last_index);
+    // 関数名一覧を取得(カンマで区切った各要素を関数名とする)
+    std::size_t begin = 0;      // 現在の要素の先頭位置
+    while (true) {
+        // 次のカンマまで(なければ末尾まで)を1要素として切り出す
+        const std::size_t comma_index = names.find(',', begin);
+        std::string function_name = ltrim(names.substr(begin, comma_index - begin));
 
         // 末尾の空白を除去（カンマの前に空白がある場合に備える）
         while (!function_name.empty() && function_name.back() == ' ') {
             function_name.pop_back();
+        }
+
+        // 空の要素なら(連続・先頭・末尾のカンマ)
+        // 空文字列を関数名として登録すると，無関係な箇所のエラーや `:` のみの行の受理につながる
+        if (function_name.empty()) {
+            throw "asm syntax error: empty function name in .global '" + line + "'";
         }
 
         // 数値表記・レジスタ表記と同じ綴りなら
@@ -345,8 +348,9 @@ void get_function_names(
         }
         functions[function_name] = std::string::npos;   // いったんnposを入れる
 
-        // 関数名の長さぶんiに加算
-        i += last_index;
+        // 最後の要素なら終了し，そうでなければカンマの次から続ける
+        if (comma_index == std::string::npos) break;
+        begin = comma_index + 1;
     }
 }
 
