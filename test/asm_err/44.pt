@@ -1,0 +1,12 @@
+; callの呼び出し先にmainを書いた → エラーになるべき
+; mainはプログラムの開始点で，main内のretは自分自身へのjmpになるため，呼び出しても戻れない
+
+.global main, f
+
+main:
+    call f
+    ret
+
+f:
+    call main
+    ret
