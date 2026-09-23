@@ -1,0 +1,7 @@
+; .globalの直後がカンマ → エラーになるべき
+; .globalの直後は半角スペースで区切る
+
+.global,main
+
+main:
+    ret
