@@ -2,13 +2,13 @@
 ; .global行・関数ラベル・局所ラベル・命令行のいずれでも，コメント中の , ; : は解釈されない
 ; タブは非対応だが，コメント中のタブはエラーにならない
 
-.global main, func;関数一覧 ; main,func
+.global main, func;関数一覧: main,func ; 順不同
 
 main:;エントリ: 開始
     call func;funcを呼ぶ
     add r34 r32 r33;足し算;二重のコメント記号
     eq r34 r33 .L0;.L0: へ分岐
-.L0:;分岐先
+.L0:;分岐先: eq,retの間;
     ret;mainのretは自分自身へのjmpになる
 
 func:;関数
