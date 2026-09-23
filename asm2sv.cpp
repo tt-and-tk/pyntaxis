@@ -286,7 +286,7 @@ void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
 std::string read_global_line(std::ifstream &asm_file) {
     std::string line;
     while (getline(asm_file, line)) {
-        // .global 行が見つかったら（タブ非対応を確認して）返す
+        // .global 行が見つかったらコメントを除き（タブ非対応を確認して）返す
         if (strncmp(".global ", line.c_str(), strlen(".global ")) == 0) {
             const std::string code = strip_comment(line);
             throw_if_tab(code);
