@@ -34,10 +34,12 @@ def main():
             asm_path = os.path.join(ASM_ERR_DIR, asm_file)
             sv_path = os.path.join(tmpdir, asm_file.replace(".pt", ".sv"))
 
+            # 出力は入力由来の日本語を含みうるため，Windows既定のcp932ではなくUTF-8で読む
             result = subprocess.run(
                 [ASM2SV, asm_path, "-sv", sv_path],
                 capture_output=True,
-                text=True,
+                encoding="utf-8",
+                errors="backslashreplace",
             )
 
             stdout = result.stdout.strip()
