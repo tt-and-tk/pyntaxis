@@ -1,0 +1,7 @@
+; .globalの前にタブがある → エラーになるべき
+; .globalは行頭から書く(タブは非対応)
+
+	.global main
+
+main:
+    ret
