@@ -1,0 +1,7 @@
+; .globalの前に空白がある → エラーになるべき
+; .globalは行頭から書く
+
+  .global main
+
+main:
+    ret

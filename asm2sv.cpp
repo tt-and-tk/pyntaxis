@@ -286,17 +286,30 @@ void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
 std::string read_global_line(std::ifstream &asm_file) {
     std::string line;
     while (getline(asm_file, line)) {
-        // .global 行が見つかったらコメントを除き(タブ非対応を確認して)返す
-        if (strncmp(".global ", line.c_str(), strlen(".global ")) == 0) {
-            const std::string code = strip_comment(line);
+        const std::string code = strip_comment(line);   // コメントを除いた行
+
+        // .global 行が見つかったら(タブ非対応を確認して)コメントを除いた行を返す
+        if (strncmp(".global ", code.c_str(), strlen(".global ")) == 0) {
             throw_if_tab(code);
             return code;
         }
 
-        // 空行でもコメント行でもなければ，.global より前のコードとしてエラー
-        if (!ltrim(strip_comment(line)).empty()) {
-            throw "asm syntax error: code before .global '" + line + "'";
+        // 空行・コメント行は読み飛ばす
+        if (ltrim(code).empty()) {
+            continue;
         }
+
+        // 先頭の語が .global なら，書き方の誤った .global 行として原因が分かるエラーにする
+        // 空白・タブで区切った語で比べるのは，.globalx のような別の語を .global 行と誤認しないため
+        // タブのみの行は先頭の語が無い(head が npos)ため，比較せず下の .global より前のコードとしてのエラーに回す
+        const std::size_t head = code.find_first_not_of(" \t");    // 先頭の語の開始位置
+        const std::size_t tail = code.find_first_of(" \t", head);  // 先頭の語の直後の位置
+        if (head != std::string::npos && code.substr(head, tail - head) == ".global") {
+            throw "asm syntax error: .global must start at the beginning of the line and be followed by a space '" + line + "'";
+        }
+
+        // それ以外は .global より前のコードとしてエラー
+        throw "asm syntax error: code before .global '" + line + "'";
     }
 
     // .global 宣言が無いままEOFに達した
