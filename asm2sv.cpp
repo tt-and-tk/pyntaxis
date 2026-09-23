@@ -299,19 +299,19 @@ std::string read_global_line(std::ifstream &asm_file) {
             continue;
         }
 
-        const std::size_t head = code.find_first_not_of(" \t");     // 先頭の語の開始位置(空白・タブのみの行ならnpos)
-        const std::size_t tail = code.find_first_of(" \t,", head);  // 先頭の語の直後の位置
+        // 先頭の語(先頭の空白・タブを飛ばし，次の空白・タブ・カンマの手前まで)を取り出す
+        // 空白・タブのみの行では head が行末になり，空文字列になる
+        const std::size_t head = std::min(code.find_first_not_of(" \t"), code.size());  // 先頭の語の開始位置
+        const std::string word = code.substr(head, code.find_first_of(" \t,", head) - head);  // 先頭の語
 
-        // 先頭の語が .global なら，書き方の誤った .global 行として原因が分かるエラーにする
-        // 該当するのは，行頭に空白・タブがある行(`  .global main`)，.global の直後が行末・コメント・タブ・カンマの行
-        // (`.global`・`.global;x`・`.global<タブ>main`・`.global,main`)
-        // 空白・タブ・カンマで区切った語で比べるのは，.globalx のような別の語を .global 行と誤認しないため
-        // head が npos の行(タブを含むため上で読み飛ばされなかった空白・タブのみの行)は語が無いので比べない
-        if (head != std::string::npos && code.substr(head, tail - head) == ".global") {
+        // 先頭の語が .global の行は，.global 行の書き方を誤ったものとして原因が分かるエラーにする
+        // 例: `  .global main`(行頭に空白)・`.global;x`(直後がコメント)・`.global<タブ>main`・`.global,main`
+        // 語単位で比べるのは，.globalx のような別の語を .global 行と誤認しないため
+        if (word == ".global") {
             throw "asm syntax error: .global must start at the beginning of the line and be followed by a space '" + line + "'";
         }
 
-        // それ以外は .global より前のコードとしてエラー
+        // それ以外(`  mov ...` や `.globalx` のように先頭の語が .global でない行)は .global より前のコードとしてエラー
         throw "asm syntax error: code before .global '" + line + "'";
     }
 
