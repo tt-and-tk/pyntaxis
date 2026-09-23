@@ -288,8 +288,9 @@ std::string read_global_line(std::ifstream &asm_file) {
     while (getline(asm_file, line)) {
         // .global 行が見つかったら（タブ非対応を確認して）返す
         if (strncmp(".global ", line.c_str(), strlen(".global ")) == 0) {
-            throw_if_tab(line);
-            return strip_comment(line);
+            const std::string code = strip_comment(line);
+            throw_if_tab(code);
+            return code;
         }
 
         // 空行でもコメント行でもなければ，.global より前のコードとしてエラー
