@@ -303,7 +303,7 @@ std::string read_global_line(std::ifstream &asm_file) {
         // 該当するのは，行頭に空白・タブがある行(`  .global main`)，.global の直後が行末・コメント・タブ・カンマの行
         // (`.global`・`.global;x`・`.global<タブ>main`・`.global,main`)
         // 空白・タブ・カンマで区切った語で比べるのは，.globalx のような別の語を .global 行と誤認しないため
-        // タブのみの行は先頭の語が無い(head が npos)ため，比較せず下の .global より前のコードとしてのエラーに回す
+        // 空白・タブのみの行(タブを含むため空行として読み飛ばされない)は先頭の語が無い(head が npos)ため，比較せず下の .global より前のコードとしてのエラーに回す
         const std::size_t head = code.find_first_not_of(" \t");     // 先頭の語の開始位置
         const std::size_t tail = code.find_first_of(" \t,", head);  // 先頭の語の直後の位置
         if (head != std::string::npos && code.substr(head, tail - head) == ".global") {
