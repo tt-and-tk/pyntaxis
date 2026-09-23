@@ -22,7 +22,7 @@ static void get_args(int argc, char **argv, args_t &args);                // コ
 static void asm2sv(std::ifstream &asm_file, std::ofstream &sv_file);      // アセンブリをSystemVerilogに変換する
 static void output_header(std::ofstream &sv_file);                        // svファイルのヘッダーを出力する
 static void output_body(std::ifstream &asm_file, std::ofstream &sv_file); // 機械語化した命令部分を出力する
-static std::string read_global_line(std::ifstream &asm_file);            // .global行まで読み飛ばして返す
+static std::string read_global_line(std::ifstream &asm_file);            // .global行まで読み飛ばし，コメントを除いて返す
 static void get_function_names(                                          // プログラムに存在する関数の名前を取得する
     std::map<std::string, std::size_t> &functions, std::string line
 );
@@ -35,7 +35,7 @@ static void output_instruction_line(                                            
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
 );
-static std::vector<std::string> split_args(std::string line);            // 引数部分を空白区切りで取り出す(コメント以降は読まない)
+static std::vector<std::string> split_args(std::string line);            // コメントを除いた引数部分を空白区切りで取り出す
 static const command_form_t &select_form(                                // 書かれた引数に合う引数形式を選ぶ
     const std::map<std::string, std::size_t> &functions,
     const std::vector<command_form_t> &forms, const std::vector<std::string> &args,
@@ -281,20 +281,20 @@ void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
     sv_file << "    };\n";
 }
 
-// .global行まで読み飛ばして返す
+// .global行まで読み飛ばし，コメントを除いて返す
 // .global より前は空行とコメント行(;)のみ許可し，それ以外はエラーにする
 std::string read_global_line(std::ifstream &asm_file) {
     std::string line;
     while (getline(asm_file, line)) {
-        // .global 行が見つかったら（タブ非対応を確認して）返す
+        // .global 行が見つかったらコメントを除き(タブ非対応を確認して)返す
         if (strncmp(".global ", line.c_str(), strlen(".global ")) == 0) {
-            throw_if_tab(line);
-            return line;
+            const std::string code = strip_comment(line);
+            throw_if_tab(code);
+            return code;
         }
 
         // 空行でもコメント行でもなければ，.global より前のコードとしてエラー
-        std::string trimmed = ltrim(line);
-        if (!trimmed.empty() && trimmed[0] != ';') {
+        if (!ltrim(strip_comment(line)).empty()) {
             throw "asm syntax error: code before .global '" + line + "'";
         }
     }
@@ -367,15 +367,12 @@ void assemble_body(
     bool current_has_ret = false;           // 現在の関数が ret を含むか
 
     while (getline(asm_file, line)) {
-        // 空行はスキップ
-        if (line == "") continue;
-
-        // 空白のみの行・コメント行はスキップ(main宣言前のコードとして扱わないため)
-        std::string trimmed = ltrim(line);
-        if (trimmed.empty() || trimmed[0] == ';') continue;
-
         // コメントを除いた部分(コメント内のコロンをラベルと誤認しないため)
-        const std::string code = line.substr(0, line.find(';'));
+        const std::string code = strip_comment(line);
+
+        // 空行・空白のみの行・コメント行はスキップ(main宣言前のコードとして扱わないため)
+        const std::string trimmed = ltrim(code);
+        if (trimmed.empty()) continue;
 
         // ラベル宣言なら
         std::size_t colon_index = code.find_first_of(':');
@@ -431,7 +428,7 @@ void assemble_body(
         if (command == "ret") current_has_ret = true;
 
         // アセンブリを機械語にしてinstructionsに追加する
-        output_instruction_line(instructions, functions, line);
+        output_instruction_line(instructions, functions, code);
 
         // mainはCALLできず戻り先が無いため，main内のretはすべてプログラムの終了を表す
         // 自分自身へのjmp(無限ループ)に置き換えて，どの経路でmainを抜けても同じ終了状態にする
@@ -454,6 +451,7 @@ void assemble_body(
 }
 
 // アセンブリ一行を機械語化しinstructionsへ追加する
+// lineはコメントを除いた，空白以外の文字を含む行とする
 void output_instruction_line(
     std::vector<std::string> &instructions,
     const std::map<std::string, std::size_t> &functions, std::string line
@@ -463,9 +461,6 @@ void output_instruction_line(
 
     // 先頭のスペースを除去する
     line = ltrim(line);
-
-    // セミコロンなら
-    if (line[0] == ';') return;
 
     // 命令を取得
     std::string command = line.substr(0, str_find_first_of(line, ' '));
@@ -504,14 +499,14 @@ void output_instruction_line(
     instructions.push_back(instr);
 }
 
-// アセンブリ一行の引数部分を空白区切りで取り出す(コメント以降は読まない)
+// コメントを除いたアセンブリ一行の引数部分を空白区切りで取り出す
 std::vector<std::string> split_args(std::string line) {
     std::vector<std::string> args;    // 書かれた引数一覧
 
     while (true) {
-        // 引数前のスペースを除去し，引数が尽きるかコメントに達したら終わる
+        // 引数前のスペースを除去し，引数が尽きたら終わる
         line = ltrim(line);
-        if (line.empty() || line[0] == ';') break;
+        if (line.empty()) break;
 
         // 次のスペースまでを引数一つとして取り出す
         const int first_space = str_find_first_of(line, ' ');
