@@ -8,6 +8,7 @@
 
 int str_find_first_of(const std::string &str, const char ch);     // 最初にchが出現する文字数を返す．なければ末尾までの文字数
 std::string ltrim(const std::string &str);                        // 先頭の半角スペースを除去する
+std::string strip_comment(const std::string &line);               // コメント(;以降)を除去する
 const std::string b2d(const std::string &bin);                    // 2進数を10進数に変換する
 const std::string o2d(const std::string &oct);                    // 8進数を10進数に変換する
 const std::string h2d(const std::string &hex);                    // 16進数を10進数に変換する
@@ -29,6 +30,11 @@ std::string ltrim(const std::string &str) {
     std::size_t i = 0;
     while (i < str.length() && str[i] == ' ') i++;
     return str.substr(i);
+}
+
+// コメント(;以降)を除去する
+std::string strip_comment(const std::string &line) {
+    return line.substr(0, line.find(';'));
 }
 
 // b2d/o2d/h2d は現在どこからも呼ばれていない（未使用）．
