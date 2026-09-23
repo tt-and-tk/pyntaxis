@@ -6,4 +6,5 @@ main:
     mov fh r0 r0 -1     ; -1 → 32bit2の補数で32'hffffffff
     mov fh r0 r1 -5     ; -5 → 32bit2の補数で32'hfffffffb
     mov fh r0 r2 0      ; 境界値(0)は10進のまま
+    mov fh r0 r3 -2147483648 ; 最小値 → 32bit2の補数で32'h80000000
     ret

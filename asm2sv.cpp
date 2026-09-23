@@ -1,8 +1,10 @@
 #include <string.h>
+#include <cstdint>
 #include <cstdio>
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 #include "asm2sv.hpp"
@@ -839,7 +841,20 @@ std::string convert_arg(
         // 負の10進数はそのまま足すと符号拡張により33bit目の即値使用フラグが消えるため，
         // 32bit2の補数のhexにしてから足す
         if (!converted_arg.empty() && converted_arg[0] == '-') {
-            converted_arg = offset2imm(std::stol(converted_arg));
+            // stolはlongが32bitの環境で範囲外を例外にし，64bitの環境では黙って通すため，
+            // 環境によらず64bitのstollで数値化してから32bitの範囲を検証する
+            long long value = INT64_MIN;  // 数値化した即値．64bitにも収まらない桁数なら最小値のまま範囲外とする
+            try {
+                value = std::stoll(converted_arg);
+            }
+            catch (const std::out_of_range &) {}
+
+            // 32bit2の補数で表せる最小値(-2147483648)未満はエラーにする
+            if (value < INT32_MIN) {
+                throw "asm syntax error: immediate out of range '" + arg + "'";
+            }
+
+            converted_arg = offset2imm(static_cast<long>(value));
         }
         converted_arg = "33'h1_0000_0000 + " + converted_arg;
     }
