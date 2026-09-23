@@ -1,6 +1,7 @@
 """
 test/asm_err/*.pt を全て変換し，エラーが出ることを確認するテストスクリプト。
-- 終了コードが非0、またはエラーメッセージが出力されることを「成功（エラー検出）」とする。
+- 終了コードが1で、かつ構文エラーのメッセージ(asm syntax error)が出力されることを「成功（エラー検出）」とする。
+  (終了コードが非0なだけでは、例外で異常終了した場合も成功とみなしてしまうため)
 - エラーが出なかった場合は「失敗（エラー未検出）」として報告する。
 """
 
@@ -46,10 +47,8 @@ def main():
             stderr = result.stderr.strip()
             output = (stdout + "\n" + stderr).strip()
 
-            # 終了コード非0 または エラーメッセージが含まれていればエラー検出成功
-            error_detected = result.returncode != 0 or (
-                "error" in output.lower() or "fail" in output.lower()
-            )
+            # 終了コード1 かつ 構文エラーのメッセージが含まれていればエラー検出成功
+            error_detected = result.returncode == 1 and "asm syntax error" in output
 
             if error_detected:
                 detected.append((asm_file, output))

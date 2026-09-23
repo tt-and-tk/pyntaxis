@@ -7,13 +7,14 @@ module rom_sv(
     );
     import machine_p::*;
 
-    localparam integer ROM_SIZE = 4;
+    localparam integer ROM_SIZE = 5;
 
     (* rom_style = "block" *) machine_t machines[0:ROM_SIZE - 1] = {
         mov(4'hf, 0, 0, 33'h1_0000_0000 + 32'hffffffff),
         mov(4'hf, 0, 1, 33'h1_0000_0000 + 32'hfffffffb),
         mov(4'hf, 0, 2, 33'h1_0000_0000 + 0),
-        jmp(0, 33'h1_0000_0000 + 3)
+        mov(4'hf, 0, 3, 33'h1_0000_0000 + 32'h80000000),
+        jmp(0, 33'h1_0000_0000 + 4)
     };
 
     always_ff @(posedge clk) begin
