@@ -1,7 +1,7 @@
 ; 行末コメントの;以降が，;の直前の空白の有無に関わらずコメントとして無視されることを確認する
 ; .global行・関数ラベル・局所ラベル・命令行のいずれでも，コメント中の , ; : は解釈されない
 
-.global main, func ; 関数一覧,main;func
+.global main, func;関数一覧 ; main,func
 
 main:;エントリ: 開始
     call func;funcを呼ぶ
