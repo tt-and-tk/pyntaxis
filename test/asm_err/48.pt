@@ -1,0 +1,7 @@
+; .globalの直後がコメント → エラーになるべき
+; .globalの直後は半角スペースで区切る
+
+.global;x
+
+main:
+    ret
