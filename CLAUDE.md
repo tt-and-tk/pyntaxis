@@ -34,7 +34,7 @@ python test.py        # 正常系: test/asm/*.pt を全て変換し test/sv/ へ
 python test_err.py    # 異常系: test/asm_err/*.pt が全てエラーになることを確認
 python test_bin.py    # 実行ファイル: test/asm_bin/*.pt を test/bin/ へ出力し，test/asm_bin_err/*.pt と引数の誤りがエラーになることを確認
 ```
-期待値は `test/sv_ans/`・`test/bin_ans/`(実行ファイルと同じ形式のバイナリ) にある。
+期待値は `test/sv_ans/`・`test/bin_ans/`(実行ファイルと同じ形式のバイナリ) にある．
 
 **単体実行:**
 ```
