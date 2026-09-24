@@ -1,0 +1,9 @@
+; 実行ファイルでは，mainの途中のret(早期return)も末尾のretも，自分自身へのjmpに置き換えずretのまま残る
+
+.global main
+
+main:
+    eq r0 r0 .L0    ; index 0: 前方 → .L0(2) - 0 = 2
+    ret             ; index 1: 早期return
+.L0:
+    ret             ; index 2

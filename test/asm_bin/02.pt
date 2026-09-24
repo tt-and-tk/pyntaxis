@@ -1,0 +1,9 @@
+; 実機での確認用: 「Hi」と改行を出力してシェルへ戻る
+
+.global main
+
+main:
+    print r0 48h    ; 'H'
+    print r0 69h    ; 'i'
+    print r0 0ah    ; 改行
+    ret
