@@ -138,7 +138,10 @@ int assemble_asm_to_sv(int argc, char **argv) {
     std::ofstream output_file(output_file_name, std::ios::binary);
     output_file << writer.content();
     output_file.close();
+
+    // 開けなかった・書き込みの途中で失敗した場合も，書きかけのファイルを残さない
     if (!output_file) {
+        std::remove(output_file_name.c_str());
         std::cout << "cannot write output file: " << output_file_name << std::endl;
         return 1;
     }
