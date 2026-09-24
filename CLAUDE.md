@@ -41,7 +41,7 @@ python test_bin.py    # 実行ファイル: test/asm_bin/*.pt を test/bin/ へ�
 asm2sv.exe input.pt -sv output.sv
 rem または(-sv 省略時は input.sv が生成される)
 asm2sv.exe input.pt
-rem 実行ファイルを出力する場合(拡張子の無い名前を指定する．-sv とは同時に指定できない)
+rem 実行ファイルを出力する場合(拡張子の無い8文字以内の名前を指定する．-sv とは同時に指定できない)
 asm2sv.exe input.pt -bin OUTPUT
 ```
 

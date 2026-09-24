@@ -3,7 +3,7 @@
 - 正常系: test/asm_bin/*.pt を全て実行ファイルに変換して test/bin/ へ出力し，test/bin_ans/ の期待値とバイト単位で比較する．
   期待値のファイル名は，出力と同じく.ptを除いた名前(拡張子なし)とする．
 - 異常系: test/asm_bin_err/*.pt を全て実行ファイルに変換し，構文エラーになることを確認する．
-- 引数の誤り: -svとの同時指定・拡張子付きの実行ファイル名・値の無い-binなどが，引数エラーになり出力ファイルを作らないことを確認する．
+- 引数の誤り: -svとの同時指定・Qosmosの実行ファイル名として使えない名前・値の無い-binなどが，引数エラーになり出力ファイルを作らないことを確認する．
 """
 
 import os
@@ -128,6 +128,8 @@ def check_args():
          [os.path.join(BIN_DIR, "BOTH.sv"), os.path.join(BIN_DIR, "BOTH")]),
         ("拡張子付きの実行ファイル名", ["-bin", os.path.join(BIN_DIR, "EXT.BIN")], [os.path.join(BIN_DIR, "EXT.BIN")]),
         ("ファイル名の部分が空の実行ファイル名", ["-bin", BIN_DIR + os.sep], []),
+        ("8文字を超える実行ファイル名", ["-bin", os.path.join(BIN_DIR, "LONGNAME9")], [os.path.join(BIN_DIR, "LONGNAME9")]),
+        ("短い名前に使えない記号を含む実行ファイル名", ["-bin", os.path.join(BIN_DIR, "A+B")], [os.path.join(BIN_DIR, "A+B")]),
         ("値の無い-bin", ["-bin"], [asm_path[:-len(".pt")] + ".sv"]),
         ("空の-bin", ["-bin", ""], [asm_path[:-len(".pt")] + ".sv"]),
     ]

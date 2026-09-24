@@ -68,6 +68,7 @@ static bool is_number_notation(const std::string &word);                 // 数�
 static bool is_negative_notation(const std::string &word);               // 負の数値表記('-'+10進)として妥当か
 static bool is_register_notation(const std::string &word);               // レジスタ表記('r'+数値表記)として妥当か
 static void throw_if_tab(const std::string &line);                       // タブ文字があればエラーにする
+static bool is_executable_name(const std::string &name);                 // Qosmosの実行ファイル名として使えるか
 static void resolve_refs(                                                // 関数・局所ラベルの参照をPC/相対オフセットに解決する
     std::vector<instruction_t> &instructions,
     const std::map<std::string, std::size_t> &functions,
@@ -218,13 +219,10 @@ void get_args(int argc, char **argv, args_t &args) {
             && args.sv_file_name.substr(args.sv_file_name.length() - 3) == ".sv"
         );
 
-    // 実行ファイル名のうちファイル名の部分(最後のパス区切りより後)が，空でなく拡張子を持たないか
-    // Qosmosは拡張子(.)を持たないファイルだけを実行ファイルとして探すため，拡張子付きの名前は受け付けない
-    // ディレクトリ部分の.(../binなど)は名前に関わらないため許す
+    // 実行ファイル名のうちファイル名の部分(最後のパス区切りより後)が，Qosmosの実行ファイル名として使えるか
+    // ディレクトリ部分の.(../binなど)は名前に関わらないため問わない
     const std::string bin_base_name = args.bin_file_name.substr(args.bin_file_name.find_last_of("/\\") + 1);
-    const bool bin_name_ok =
-        !output_bin
-        || (!bin_base_name.empty() && bin_base_name.find('.') == std::string::npos);
+    const bool bin_name_ok = !output_bin || is_executable_name(bin_base_name);
 
     // コマンドライン引数が不正ではないことをチェック
     if (!asm_name_ok || both_output || !sv_name_ok || !bin_name_ok) {
@@ -234,7 +232,7 @@ void get_args(int argc, char **argv, args_t &args) {
                   << "    actual: " << args.asm_file_name << std::endl
                   << "-sv: output file name. e.g. ~~.sv" << std::endl
                   << "    actual: " << args.sv_file_name << std::endl
-                  << "-bin: executable file name without extension. e.g. HELLO (cannot be used with -sv)" << std::endl
+                  << "-bin: executable file name (1-8 characters, no extension). e.g. HELLO (cannot be used with -sv)" << std::endl
                   << "    actual: " << args.bin_file_name << std::endl;
 
         // 後の処理でエラーになるよう，コマンドライン引数をクリア
@@ -870,6 +868,22 @@ void throw_if_tab(const std::string &line) {
     if (line.find('\t') != std::string::npos) {
         throw "asm syntax error: tab character is not supported '" + line + "'";
     }
+}
+
+// Qosmosの実行ファイル名として使えるかを返す
+// Qosmosは拡張子(.)を持たないファイルだけを実行ファイルとして探し，名前は8.3形式の短い名前で扱う
+// このため基本名だけの1〜8文字で，FATの短い名前に使えない文字(制御文字・空白・記号)を含まないものに限る
+// 8文字を超える名前はカード上で別の短い名前(HELLOW~1など)になり，付けた名前で実行できないため受け付けない
+bool is_executable_name(const std::string &name) {
+    // 基本名は1〜8文字
+    if (name.empty() || name.length() > 8) return false;
+
+    for (const unsigned char c : name) {
+        // 制御文字・空白と，拡張子の区切り・短い名前に使えない記号
+        if (c <= ' ' || c == 0x7f || strchr(".\"*+,/:;<=>?[\\]|", c) != nullptr) return false;
+    }
+
+    return true;
 }
 
 // 関数・局所ラベルの参照を解決し，引数のSystemVerilog上の表記と値を埋める
