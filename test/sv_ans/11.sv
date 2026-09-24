@@ -7,7 +7,7 @@ module rom_sv(
     );
     import machine_p::*;
 
-    localparam integer ROM_SIZE = 17;
+    localparam integer ROM_SIZE = 21;
 
     (* rom_style = "block" *) machine_t machines[0:ROM_SIZE - 1] = {
         sll(1, 2, 3, 0),
@@ -26,7 +26,11 @@ module rom_sv(
         egtu(1, 2, 33'h1_0000_0000 + 32'hfffffff3),
         jmp(0, 33'h1_0000_0000 + 16),
         jmp(0, 33'h1_0000_0000 + 0),
-        jmp(0, 33'h1_0000_0000 + 16)
+        jmp(0, 33'h1_0000_0000 + 16),
+        eq(1, 2, 33'h1_0000_0000 + 3),
+        jmp(0, 33'h1_0000_0000 + 20),
+        ret(),
+        ret()
     };
 
     always_ff @(posedge clk) begin

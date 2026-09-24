@@ -1,0 +1,12 @@
+; 関数末尾の局所ラベルを次の関数から参照した → エラーになるべき
+; .L0 のindexはfuncの先頭と一致するが，定義したmainに属する
+
+.global main, func
+
+main:
+    ret
+.L0:
+
+func:
+    jmp .L0
+    ret

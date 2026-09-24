@@ -17,6 +17,12 @@ typedef struct {
     std::string sv_file_name;     // 出力ファイル名
 } args_t;
 
+// 局所ラベルの定義情報
+typedef struct {
+    std::size_t index;            // ラベルの位置（直後の命令のindex）
+    std::string function;         // ラベルを定義した関数名
+} local_label_t;
+
 // 関数
 // (assemble_asm_to_sv以外はこのファイル内でしか使わないため，pn2sv.exeへのリンク時に
 //  コンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
@@ -28,10 +34,11 @@ static std::string read_global_line(std::ifstream &asm_file);            // .glo
 static void get_function_names(                                          // プログラムに存在する関数の名前を取得する
     std::map<std::string, std::size_t> &functions, std::string line
 );
-static void assemble_body(                                               // 本体をアセンブルしfunctions/local_labels/instructionsを埋める
+static void assemble_body(                                               // 本体をアセンブルしfunctions/local_labels/instructions/instruction_functionsを埋める
     std::ifstream &asm_file, std::map<std::string, std::size_t> &functions,
-    std::map<std::string, std::size_t> &local_labels,
-    std::vector<std::string> &instructions
+    std::map<std::string, local_label_t> &local_labels,
+    std::vector<std::string> &instructions,
+    std::vector<std::string> &instruction_functions
 );
 static void output_instruction_line(                                             // アセンブリ一行を機械語化しinstructionsへ追加
     std::vector<std::string> &instructions,
@@ -65,7 +72,8 @@ static bool is_register_notation(const std::string &word);               // レ�
 static void throw_if_tab(const std::string &line);                       // タブ文字があればエラーにする
 static void resolve_labels(                                              // 局所ラベル参照を絶対index/相対オフセットに解決する
     std::vector<std::string> &instructions,
-    const std::map<std::string, std::size_t> &local_labels
+    const std::vector<std::string> &instruction_functions,
+    const std::map<std::string, local_label_t> &local_labels
 );
 static std::string offset2imm(const long offset);                        // 相対オフセットをイミディエイト表記にする（負は32bit2の補数）
 static std::string join_instructions(                                    // 命令を結合する（末尾カンマ無し）
@@ -249,8 +257,9 @@ void output_header(std::ofstream &sv_file) {
 // 機械語化した命令部分を出力する
 void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
     std::map<std::string, std::size_t> functions;     // 関数とその開始pc
-    std::map<std::string, std::size_t> local_labels;  // 局所ラベルとその位置（直後の命令のindex）
+    std::map<std::string, local_label_t> local_labels; // 局所ラベルとその位置・定義した関数
     std::vector<std::string> instructions;            // 機械語にした命令一覧（1要素=1命令）
+    std::vector<std::string> instruction_functions;   // 各命令が属する関数名（instructionsと同じ並び）
 
     // .global 行を取得し，宣言された関数名を読み込む
     std::string global_line = read_global_line(asm_file);
@@ -261,8 +270,8 @@ void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
         throw std::string("asm syntax error: main function not found");
     }
 
-    // 本体をアセンブルする（functions/local_labels のpc確定 + instructions 生成）
-    assemble_body(asm_file, functions, local_labels, instructions);
+    // 本体をアセンブルする（functions/local_labels のpc確定 + instructions/instruction_functions 生成）
+    assemble_body(asm_file, functions, local_labels, instructions, instruction_functions);
 
     // .global で宣言された関数がすべて定義されているか確認する
     // pcがnposのまま残っていれば，宣言だけで定義(ラベル)がない関数
@@ -273,7 +282,7 @@ void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
     }
 
     // 局所ラベル参照を解決する（絶対index/相対オフセット）
-    resolve_labels(instructions, local_labels);
+    resolve_labels(instructions, instruction_functions, local_labels);
 
     // 命令数をlocalparam，machine_t配列として出力する
     const std::string body = function_name2line_num(functions, join_instructions(instructions));
@@ -373,12 +382,13 @@ void get_function_names(
     }
 }
 
-// 本体をアセンブルしfunctionsとinstructionsを埋める
+// 本体をアセンブルしfunctions/local_labels/instructions/instruction_functionsを埋める
 // 命令のpcは instructions のインデックスに対応する
 void assemble_body(
     std::ifstream &asm_file, std::map<std::string, std::size_t> &functions,
-    std::map<std::string, std::size_t> &local_labels,
-    std::vector<std::string> &instructions
+    std::map<std::string, local_label_t> &local_labels,
+    std::vector<std::string> &instructions,
+    std::vector<std::string> &instruction_functions
 ) {
     std::string line;                       // アセンブリファイルの一文
     std::string current_function;           // 現在変換中の関数名
@@ -397,15 +407,20 @@ void assemble_body(
         if (colon_index != std::string::npos) {
             std::string label_name = code.substr(0, colon_index);
 
-            // 局所ラベル（先頭が '.'）なら，関数とは別に位置だけ記録する
+            // 局所ラベル（先頭が '.'）なら，関数ラベルとは別の表に位置と定義した関数を記録する
             // 命令は生成せず，.global 照合・main先頭チェック・ret追跡の対象外
             if (!label_name.empty() && label_name[0] == '.') {
+                // main関数の宣言前にある（どの関数にも属さず，参照できない）
+                if (current_function.empty()) {
+                    throw "asm syntax error: local label before main function '" + label_name + "'";
+                }
                 // すでに定義済みなら（ラベルはプログラム全体で一意）
                 if (local_labels.find(label_name) != local_labels.end()) {
                     throw "asm syntax error: label overlapping definition '" + label_name + "'";
                 }
-                // ラベル位置（直後の命令のindex）を記録する
-                local_labels[label_name] = instructions.size();
+                // ラベル位置（直後の命令のindex）と定義した関数を記録する
+                // 所属をindexで判定しないのは，関数末尾のラベルのindexが次の関数の先頭と一致するため
+                local_labels[label_name] = {instructions.size(), current_function};
                 continue;
             }
 
@@ -447,6 +462,8 @@ void assemble_body(
 
         // アセンブリを機械語にしてinstructionsに追加する
         output_instruction_line(instructions, functions, code);
+        // 命令が属する関数を記録する（局所ラベル参照が同じ関数内か確かめるため）
+        instruction_functions.push_back(current_function);
 
         // mainはCALLできず戻り先が無いため，main内のretはすべてプログラムの終了を表す
         // 自分自身へのjmp(無限ループ)に置き換えて，どの経路でmainを抜けても同じ終了状態にする
@@ -875,7 +892,8 @@ void throw_if_tab(const std::string &line) {
 // jmp（絶対）はラベルのindex，F系（相対）は「ラベルのindex − 自命令pc」に置換する
 void resolve_labels(
     std::vector<std::string> &instructions,
-    const std::map<std::string, std::size_t> &local_labels
+    const std::vector<std::string> &instruction_functions,
+    const std::map<std::string, local_label_t> &local_labels
 ) {
     for (std::size_t pc = 0; pc < instructions.size(); pc++) {
         std::string &instr = instructions[pc];
@@ -902,14 +920,19 @@ void resolve_labels(
         if (label == local_labels.end()) {
             throw "asm syntax error: undefined label reference '" + label_name + "'";
         }
+        // 参照先ラベルが参照元と同じ関数内に定義されているか
+        if (label->second.function != instruction_functions[pc]) {
+            throw "asm syntax error: label '" + label_name + "' defined in '" + label->second.function
+                + "' referenced from '" + instruction_functions[pc] + "'";
+        }
 
         // jmp（絶対）はラベルのindex，F系（相対）は「ラベルのindex − 自命令pc」に解決する
         std::string value;
         if (is_abs) {
-            value = std::to_string(label->second);
+            value = std::to_string(label->second.index);
         }
         else {
-            const long offset = static_cast<long>(label->second) - static_cast<long>(pc);
+            const long offset = static_cast<long>(label->second.index) - static_cast<long>(pc);
             value = offset2imm(offset);
         }
 
