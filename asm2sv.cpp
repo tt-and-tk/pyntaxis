@@ -15,8 +15,8 @@
 // コマンドライン引数情報
 typedef struct {
     std::string asm_file_name;    // アセンブリファイル名
-    std::string sv_file_name;     // SystemVerilogの出力ファイル名
-    std::string bin_file_name;    // 実行ファイルの出力ファイル名(指定した場合はSystemVerilogの代わりに出力する)
+    std::string sv_file_name;     // 出力するSystemVerilog ROMのファイル名
+    std::string bin_file_name;    // 出力する実行ファイルのファイル名(sv_file_nameとはどちらか一方だけが値を持つ)
 } args_t;
 
 // 局所ラベルの定義情報
