@@ -908,36 +908,43 @@ void resolve_refs(
             std::string imm;              // 解決した即値のSystemVerilog上の表記
             std::uint32_t imm_value = 0;  // 解決した即値
 
+            // 局所ラベルなら，先に参照先の定義を確かめる
+            const local_label_t *label = nullptr;    // 参照先の局所ラベル
+            if (operand.ref == ref_t::LABEL_ABS || operand.ref == ref_t::LABEL_REL) {
+                // 参照先ラベルが定義されているか
+                auto found = local_labels.find(operand.name);
+                if (found == local_labels.end()) {
+                    throw "asm syntax error: undefined label reference '" + operand.name + "'";
+                }
+                // 参照先ラベルが参照元と同じ関数内に定義されているか
+                if (found->second.function != instructions[index].function) {
+                    throw "asm syntax error: label '" + operand.name + "' defined in '" + found->second.function
+                        + "' referenced from '" + instructions[index].function + "'";
+                }
+                label = &found->second;
+            }
+
             // 関数なら，その先頭PCにする
             if (operand.ref == ref_t::FUNCTION) {
                 const std::size_t pc = base_pc + functions.at(operand.name);
                 imm = std::to_string(pc);
                 imm_value = static_cast<std::uint32_t>(pc);
             }
-            // 局所ラベルなら，定義を確かめてからPCまたは相対オフセットにする
+            // jmp（絶対）なら，ラベルのPCにする
+            else if (operand.ref == ref_t::LABEL_ABS) {
+                const std::size_t pc = base_pc + label->index;
+                imm = std::to_string(pc);
+                imm_value = static_cast<std::uint32_t>(pc);
+            }
+            // F系（相対）なら，「ラベルのindex − 自命令のindex」にする
+            else if (operand.ref == ref_t::LABEL_REL) {
+                const long offset = static_cast<long>(label->index) - static_cast<long>(index);
+                imm = offset2imm(offset);
+                imm_value = static_cast<std::uint32_t>(offset);
+            }
             else {
-                // 参照先ラベルが定義されているか
-                auto label = local_labels.find(operand.name);
-                if (label == local_labels.end()) {
-                    throw "asm syntax error: undefined label reference '" + operand.name + "'";
-                }
-                // 参照先ラベルが参照元と同じ関数内に定義されているか
-                if (label->second.function != instructions[index].function) {
-                    throw "asm syntax error: label '" + operand.name + "' defined in '" + label->second.function
-                        + "' referenced from '" + instructions[index].function + "'";
-                }
-
-                // jmp（絶対）はラベルのPC，F系（相対）は「ラベルのindex − 自命令のindex」に解決する
-                if (operand.ref == ref_t::LABEL_ABS) {
-                    const std::size_t pc = base_pc + label->second.index;
-                    imm = std::to_string(pc);
-                    imm_value = static_cast<std::uint32_t>(pc);
-                }
-                else {
-                    const long offset = static_cast<long>(label->second.index) - static_cast<long>(index);
-                    imm = offset2imm(offset);
-                    imm_value = static_cast<std::uint32_t>(offset);
-                }
+                // 起きないはずのエラーなのでエラーメッセージは適当
+                throw std::string("asm syntax error: reference type is fail");
             }
 
             // 即値使用フラグを立てて埋める

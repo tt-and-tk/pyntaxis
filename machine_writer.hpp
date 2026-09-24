@@ -165,6 +165,10 @@ private:
                 case field_t::RS2:  machine |= (value & 0x3f)          << 39; break;
                 case field_t::RD:   machine |= (value & 0x3f)          << 33; break;
                 case field_t::IMM:  machine |= (value & 0x1ffffffffULL);      break;
+
+                default:
+                    // 起きないはずのエラーなのでエラーメッセージは適当
+                    throw std::string("asm syntax error: field type is fail");
             }
         }
 
