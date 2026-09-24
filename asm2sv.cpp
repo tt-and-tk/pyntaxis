@@ -37,7 +37,8 @@ static void get_function_names(                                          // プ�
 static void assemble_body(                                               // 本体をアセンブルしfunctions/local_labels/instructions/instruction_functionsを埋める
     std::ifstream &asm_file, std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
-    std::vector<std::string> &instructions, std::vector<std::string> &instruction_functions
+    std::vector<std::string> &instructions,
+    std::vector<std::string> &instruction_functions
 );
 static void output_instruction_line(                                             // アセンブリ一行を機械語化しinstructionsへ追加
     std::vector<std::string> &instructions,
@@ -386,7 +387,8 @@ void get_function_names(
 void assemble_body(
     std::ifstream &asm_file, std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
-    std::vector<std::string> &instructions, std::vector<std::string> &instruction_functions
+    std::vector<std::string> &instructions,
+    std::vector<std::string> &instruction_functions
 ) {
     std::string line;                       // アセンブリファイルの一文
     std::string current_function;           // 現在変換中の関数名
