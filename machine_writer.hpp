@@ -20,7 +20,7 @@ public:
     virtual void write_footer() = 0;                                      // 命令列の後に置く内容を出力する
 
     // 組み上がった出力内容を返す
-    const std::string &content() const { return output; }
+    const std::string &content() const { return this->output; }
 
 protected:
     std::string output;    // 組み上がった出力内容
@@ -38,59 +38,59 @@ public:
     std::size_t base_pc() const override { return 0; }
 
     // ROMに置ける命令数の上限
-    std::size_t max_instructions() const override { return MAX_INSTRUCTIONS; }
+    std::size_t max_instructions() const override { return this->MAX_INSTRUCTIONS; }
 
     // mainは戻り先を持たないため，retをプログラムの終了(同じ命令を実行し続ける)に置き換える
     bool main_ret_halts() const override { return true; }
 
     // モジュールの宣言から，命令数のlocalparamと命令の配列の開始までを出力する
     void write_header(std::size_t instruction_num) override {
-        output += "`include \"rom.svh\"\n"
-                  "`include \"machine.svh\"\n"
-                  "\n"
-                  "module rom_sv(\n"
-                  "    input logic clk,\n"
-                  "    rom_read_if.slave rom_read\n"
-                  "    );\n"
-                  "    import machine_p::*;\n"
-                  "\n";
-        output += "    localparam integer ROM_SIZE = " + std::to_string(instruction_num) + ";\n\n";
-        output += "    (* rom_style = \"block\" *) machine_t machines[0:ROM_SIZE - 1] = {\n";
+        this->output += "`include \"rom.svh\"\n"
+                        "`include \"machine.svh\"\n"
+                        "\n"
+                        "module rom_sv(\n"
+                        "    input logic clk,\n"
+                        "    rom_read_if.slave rom_read\n"
+                        "    );\n"
+                        "    import machine_p::*;\n"
+                        "\n";
+        this->output += "    localparam integer ROM_SIZE = " + std::to_string(instruction_num) + ";\n\n";
+        this->output += "    (* rom_style = \"block\" *) machine_t machines[0:ROM_SIZE - 1] = {\n";
 
         // 配列の最後の要素を判定するため，出力する命令の数を覚えておく
-        rest = instruction_num;
+        this->rest = instruction_num;
     }
 
     // 命令をmachine.svhの関数呼び出しとして，8スペースインデントで出力する
     void write_instruction(const instruction_t &instruction) override {
-        output += "        " + machine_function_name(instruction.command) + "(";
+        this->output += "        " + this->machine_function_name(instruction.command) + "(";
 
         // 機械語の引数をSystemVerilog上の表記でカンマ区切りに並べる
         for (std::size_t i = 0; i < instruction.operands.size(); i++) {
-            if (i != 0) output += ", ";
-            output += instruction.operands[i].sv;
+            if (i != 0) this->output += ", ";
+            this->output += instruction.operands[i].sv;
         }
 
         // SystemVerilogの配列初期化子では末尾カンマが構文エラーになるため，末尾要素にはカンマを付けない
-        rest--;
-        output += (rest > 0) ? "),\n" : ")\n";
+        this->rest--;
+        this->output += (this->rest > 0) ? "),\n" : ")\n";
     }
 
     // 命令の配列を閉じ，PCに対応する命令を返す処理を出力する
     void write_footer() override {
-        output += "    };\n"
-                  "\n"
-                  "    always_ff @(posedge clk) begin\n"
-                  "        rom_read.valid <= (rom_read.pc < ROM_SIZE);\n"
-                  "\n"
-                  "        if (rom_read.pc < ROM_SIZE) begin\n"
-                  "            rom_read.machine <= machines[rom_read.pc];\n"
-                  "        end else begin\n"
-                  "            rom_read.machine <= nop();\n"
-                  "        end\n"
-                  "    end\n"
-                  "\n"
-                  "endmodule\n";
+        this->output += "    };\n"
+                        "\n"
+                        "    always_ff @(posedge clk) begin\n"
+                        "        rom_read.valid <= (rom_read.pc < ROM_SIZE);\n"
+                        "\n"
+                        "        if (rom_read.pc < ROM_SIZE) begin\n"
+                        "            rom_read.machine <= machines[rom_read.pc];\n"
+                        "        end else begin\n"
+                        "            rom_read.machine <= nop();\n"
+                        "        end\n"
+                        "    end\n"
+                        "\n"
+                        "endmodule\n";
     }
 
 private:
@@ -98,7 +98,7 @@ private:
 
     // ニーモニックをmachine.svh側の関数名に変換する
     // SystemVerilog予約語と衝突するand/or/xor/not/nandは末尾に_を付ける
-    static std::string machine_function_name(const std::string &command) {
+    std::string machine_function_name(const std::string &command) const {
         if (command == "and") return "and_";
         if (command == "or") return "or_";
         if (command == "xor") return "xor_";
@@ -119,10 +119,10 @@ public:
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
 
     // シェルはコード領域の先頭から実行ファイルを置く
-    std::size_t base_pc() const override { return BASE_PC; }
+    std::size_t base_pc() const override { return this->BASE_PC; }
 
     // コード領域に収まる命令数
-    std::size_t max_instructions() const override { return CODE_AREA_SIZE / INSTRUCTION_SIZE; }
+    std::size_t max_instructions() const override { return this->CODE_AREA_SIZE / this->INSTRUCTION_SIZE; }
 
     // シェルがCALLで呼び出すため，mainのretはそのままシェルへ戻る
     bool main_ret_halts() const override { return false; }
@@ -134,11 +134,11 @@ public:
     // imm[31:0]が先の4バイト，機械語の上位32ビットが後の4バイトになり，それぞれの中もリトルエンディアンになる
     // メモリ上の整数をそのまま書き出さないのは，バイトの並びが処理系のエンディアンに依存するため
     void write_instruction(const instruction_t &instruction) override {
-        const std::uint64_t machine = encode(instruction);    // 64ビットの機械語
+        const std::uint64_t machine = this->encode(instruction);    // 64ビットの機械語
 
         // 下位のバイトから順に取り出して出力する
-        for (std::size_t byte = 0; byte < INSTRUCTION_SIZE; byte++) {
-            output += static_cast<char>((machine >> (byte * 8)) & 0xff);
+        for (std::size_t byte = 0; byte < this->INSTRUCTION_SIZE; byte++) {
+            this->output += static_cast<char>((machine >> (byte * 8)) & 0xff);
         }
     }
 
@@ -147,7 +147,7 @@ public:
 
 private:
     // 命令を {m_type(3), func(6), mask(4), rs1(6), rs2(6), rd(6), imm(33)} の64ビットに組み立てる
-    static std::uint64_t encode(const instruction_t &instruction) {
+    std::uint64_t encode(const instruction_t &instruction) const {
         const command_t &command = commands.at(instruction.command);    // 命令の定義
 
         // m_typeとfuncを置く
