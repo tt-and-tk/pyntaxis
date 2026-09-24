@@ -112,7 +112,9 @@ int assemble_asm_to_sv(int argc, char **argv) {
 
     // 実行ファイル名の指定があれば実行ファイル，なければSystemVerilogを出力する
     const bool output_bin = !args.bin_file_name.empty();
-    machine_writer &writer = output_bin ? static_cast<machine_writer &>(bin) : sv;
+    // 条件演算子の2つの結果は同じ型である必要があり，bin_writerとsv_writerは互いに変換できないため，
+    // どちらも基底クラスの参照にそろえる
+    machine_writer &writer = output_bin ? static_cast<machine_writer &>(bin) : static_cast<machine_writer &>(sv);
     const std::string &output_file_name = output_bin ? args.bin_file_name : args.sv_file_name;
 
     // アセンブリファイルを開く
