@@ -30,12 +30,15 @@ protected:
 // 各命令はmachine.svhの関数呼び出しとして書き，機械語への変換はSystemVerilog側に任せる
 class sv_writer : public machine_writer {
 public:
+    // プログラムカウンタのビット幅(14ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える
+    // ROM自体に固定容量は無い(ROM_SIZEはプログラムの命令数から自動算出する)
+    static constexpr std::size_t MAX_INSTRUCTIONS = 16384;    // ROMに置ける命令数の上限
+
     // ROMの先頭がPC 0にあたる
     std::size_t base_pc() const override { return 0; }
 
-    // プログラムカウンタのビット幅(14ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える
-    // ROM自体に固定容量は無い(ROM_SIZEはプログラムの命令数から自動算出する)
-    std::size_t max_instructions() const override { return 16384; }
+    // ROMに置ける命令数の上限
+    std::size_t max_instructions() const override { return MAX_INSTRUCTIONS; }
 
     // mainは戻り先を持たないため，retをプログラムの終了(同じ命令を実行し続ける)に置き換える
     bool main_ret_halts() const override { return true; }
@@ -111,11 +114,15 @@ private:
 // シェルはこれをメモリのコード領域(0x8000番地からの32KB．PC 0x4000からに対応する)へ書き写し，先頭の命令をCALLで呼び出す
 class bin_writer : public machine_writer {
 public:
-    // シェルはコード領域の先頭(PC 0x4000)から実行ファイルを置く
-    std::size_t base_pc() const override { return 0x4000; }
+    static constexpr std::size_t BASE_PC = 0x4000;              // コード領域の先頭の命令のPC
+    static constexpr std::size_t CODE_AREA_SIZE = 32 * 1024;    // コード領域の大きさ(バイト)
+    static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
 
-    // コード領域の大きさ(32KB)に収まる命令数(1命令8バイト)
-    std::size_t max_instructions() const override { return 32 * 1024 / 8; }
+    // シェルはコード領域の先頭から実行ファイルを置く
+    std::size_t base_pc() const override { return BASE_PC; }
+
+    // コード領域に収まる命令数
+    std::size_t max_instructions() const override { return CODE_AREA_SIZE / INSTRUCTION_SIZE; }
 
     // シェルがCALLで呼び出すため，mainのretはそのままシェルへ戻る
     bool main_ret_halts() const override { return false; }
@@ -130,7 +137,7 @@ public:
         const std::uint64_t machine = encode(instruction);    // 64ビットの機械語
 
         // 下位のバイトから順に取り出して出力する
-        for (int byte = 0; byte < 8; byte++) {
+        for (std::size_t byte = 0; byte < INSTRUCTION_SIZE; byte++) {
             output += static_cast<char>((machine >> (byte * 8)) & 0xff);
         }
     }
