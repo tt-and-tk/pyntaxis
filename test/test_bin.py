@@ -118,7 +118,7 @@ def check_error():
 
 
 def check_args():
-    """引数の誤りを確認し，失敗した件数を返す．"""
+    """引数の誤りと実行ファイル名の長さの上限を確認し，失敗した件数を返す．"""
     fail = 0
     asm_path = os.path.join(ASM_BIN_DIR, list_asm(ASM_BIN_DIR)[0])
 
@@ -148,6 +148,17 @@ def check_args():
         else:
             fail += 1
             print(f"[FAIL] {description}: エラーが検出されなかった (returncode={returncode}, output={output!r})")
+
+    # 名前の長さの上限ちょうど(8文字)の実行ファイル名は受け付けて出力する
+    name8_path = os.path.join(BIN_DIR, "LONGNAM8")
+    if os.path.exists(name8_path):
+        os.remove(name8_path)
+    returncode, output = run([asm_path, "-bin", name8_path])
+    if returncode == 0 and os.path.exists(name8_path):
+        print("[OK]   8文字の実行ファイル名: 出力")
+    else:
+        fail += 1
+        print(f"[FAIL] 8文字の実行ファイル名: 出力されなかった (returncode={returncode}, output={output!r})")
 
     return fail
 
