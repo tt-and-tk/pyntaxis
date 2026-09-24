@@ -405,7 +405,7 @@ void assemble_body(
         if (colon_index != std::string::npos) {
             std::string label_name = code.substr(0, colon_index);
 
-            // 局所ラベル（先頭が '.'）なら，関数とは別に位置だけ記録する
+            // 局所ラベル（先頭が '.'）なら，関数ラベルとは別の表に位置と定義した関数を記録する
             // 命令は生成せず，.global 照合・main先頭チェック・ret追跡の対象外
             if (!label_name.empty() && label_name[0] == '.') {
                 // main関数の宣言前にある（どの関数にも属さず，参照できない）
