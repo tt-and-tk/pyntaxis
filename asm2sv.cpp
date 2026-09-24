@@ -381,7 +381,7 @@ void get_function_names(
     }
 }
 
-// 本体をアセンブルしfunctions・local_labels・instructions・instruction_functionsを埋める
+// 本体をアセンブルしfunctions/local_labels/instructions/instruction_functionsを埋める
 // 命令のpcは instructions のインデックスに対応する
 void assemble_body(
     std::ifstream &asm_file, std::map<std::string, std::size_t> &functions,
