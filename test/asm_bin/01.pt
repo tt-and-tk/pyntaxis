@@ -1,0 +1,56 @@
+; 実行ファイルの出力の確認(全命令の形式・関数とラベルの参照・mainのret)
+; 先頭の命令はPC 0x4000に置かれる
+
+.global main, f
+
+main:
+.L0:                    ; index 0: 後方ジャンプの飛び先
+    nop
+    and r1 r2 r3
+    or r1 r2 r3
+    xor r1 r2 r3
+    not r1 r2
+    nand r1 r2 r3
+    add r1 r2 r3
+    sub r1 r2 r3
+    mul r1 r2 r3
+    div r1 r2 r3
+    div r1 r2 r3 4
+    divu r1 r2 r3
+    divu r1 r2 r3 4
+    sll r1 r2 r3
+    srl r1 r2 r3 5
+    sla r1 r2 r3
+    sra r1 r2 r3 1fh
+    mov fh r0 r1 42
+    mov 1b r2 r1
+    eq r1 r2 .L1        ; index 19: 前方 → .L1(44) - 19 = 25
+    ne r1 r2 .L0        ; index 20: 後方 → .L0(0) - 20 = -20
+    lt r1 r2 .L1        ; index 21: 前方 → 23
+    gt r1 r2 .L0        ; index 22: 後方 → -22
+    elt r1 r2 .L1       ; index 23: 前方 → 21
+    egt r1 r2 .L0       ; index 24: 後方 → -24
+    ltu r1 r2 .L1       ; index 25: 前方 → 19
+    gtu r1 r2 .L0       ; index 26: 後方 → -26
+    eltu r1 r2 .L1      ; index 27: 前方 → 17
+    egtu r1 r2 .L0      ; index 28: 後方 → -28
+    jmp .L1             ; index 29: 絶対 → 0x4000 + 44 = 0x402c
+    call f              ; index 30: fの先頭PC → 0x4000 + 45 = 0x402d
+    mov fh r0 r1 f      ; index 31: fの先頭PC → 0x402d
+    call r1
+    rm fh r1 r3
+    rm 3h r0 r3 100h
+    wm fh r1 r2
+    wm 1h r0 r2 8
+    brm fh r1 r2 r3
+    bwm fh r1 r2 r3 4
+    rmr fh r16 r3 4
+    wmr fh r16 r2 -4
+    scan r1
+    print r1
+    print r0 41h
+.L1:                    ; index 44
+    ret                 ; mainのretはシェルへ戻るためretのまま
+
+f:                      ; index 45
+    ret

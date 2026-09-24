@@ -9,12 +9,14 @@
 
 #include "asm2sv.hpp"
 #include "asm2sv_main.hpp"
+#include "machine_writer.hpp"
 #include "util.hpp"
 
 // コマンドライン引数情報
 typedef struct {
     std::string asm_file_name;    // アセンブリファイル名
-    std::string sv_file_name;     // 出力ファイル名
+    std::string sv_file_name;     // SystemVerilogの出力ファイル名
+    std::string bin_file_name;    // 実行ファイルの出力ファイル名(指定した場合はSystemVerilogの代わりに出力する)
 } args_t;
 
 // 局所ラベルの定義情報
@@ -27,21 +29,18 @@ typedef struct {
 // (assemble_asm_to_sv以外はこのファイル内でしか使わないため，pn2sv.exeへのリンク時に
 //  コンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
-static void asm2sv(std::ifstream &asm_file, std::ofstream &sv_file);      // アセンブリをSystemVerilogに変換する
-static void output_header(std::ofstream &sv_file);                        // svファイルのヘッダーを出力する
-static void output_body(std::ifstream &asm_file, std::ofstream &sv_file); // 機械語化した命令部分を出力する
+static void assemble(std::ifstream &asm_file, machine_writer &writer);    // アセンブリを機械語にし，出力先の形式で書き出す
 static std::string read_global_line(std::ifstream &asm_file);            // .global行まで読み飛ばし，コメントを除いて返す
 static void get_function_names(                                          // プログラムに存在する関数の名前を取得する
     std::map<std::string, std::size_t> &functions, std::string line
 );
-static void assemble_body(                                               // 本体をアセンブルしfunctions/local_labels/instructions/instruction_functionsを埋める
-    std::ifstream &asm_file, std::map<std::string, std::size_t> &functions,
+static void assemble_body(                                               // 本体をアセンブルしfunctions/local_labels/instructionsを埋める
+    std::ifstream &asm_file, const machine_writer &writer,
+    std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
-    std::vector<std::string> &instructions,
-    std::vector<std::string> &instruction_functions
+    std::vector<instruction_t> &instructions
 );
-static void output_instruction_line(                                             // アセンブリ一行を機械語化しinstructionsへ追加
-    std::vector<std::string> &instructions,
+static instruction_t assemble_line(                                      // アセンブリ一行を命令にする
     const std::map<std::string, std::size_t> &functions, std::string line
 );
 static std::vector<std::string> split_args(std::string line);            // コメントを除いた引数部分を空白区切りで取り出す
@@ -60,42 +59,25 @@ static std::string form_usage(                                           // 引�
 );
 static std::string arg_type_name(const arg_t arg_type);                  // 引数の種類の名前(エラーメッセージ用)
 static std::string get_bit_length_of_command(const arg_t arg_type);      // 引数タイプごとのビット数を返す
-static std::string convert_arg(                                          // 機械語関数の引数を加工して返す
+static operand_t convert_arg(                                            // 書かれた引数を機械語の引数にする
     const std::map<std::string, std::size_t> &functions,
     const std::string &arg, const arg_t arg_type, const std::string &command
 );
-static std::string get_machine_function_name(const std::string &command); // machine.svh側の関数名へ変換する
 static bool is_digits_of_base(const std::string &digits, const int base); // 全ての桁がその基数で表せるか
 static bool is_number_notation(const std::string &word);                 // 数値表記(基数接尾辞を含む)として妥当か
 static bool is_negative_notation(const std::string &word);               // 負の数値表記('-'+10進)として妥当か
 static bool is_register_notation(const std::string &word);               // レジスタ表記('r'+数値表記)として妥当か
 static void throw_if_tab(const std::string &line);                       // タブ文字があればエラーにする
-static void resolve_labels(                                              // 局所ラベル参照を絶対index/相対オフセットに解決する
-    std::vector<std::string> &instructions,
-    const std::vector<std::string> &instruction_functions,
-    const std::map<std::string, local_label_t> &local_labels
+static void resolve_refs(                                                // 関数・局所ラベルの参照をPC/相対オフセットに解決する
+    std::vector<instruction_t> &instructions,
+    const std::map<std::string, std::size_t> &functions,
+    const std::map<std::string, local_label_t> &local_labels,
+    const std::size_t base_pc
 );
 static std::string offset2imm(const long offset);                        // 相対オフセットをイミディエイト表記にする（負は32bit2の補数）
-static std::string join_instructions(                                    // 命令を結合する（末尾カンマ無し）
-    const std::vector<std::string> &instructions
-);
-static std::string function_name2line_num(                                // 関数参照を行番号に置換する
-    const std::map<std::string, std::size_t> &functions, const std::string &body
-);
-static void output_footer(std::ofstream &sv_file);                       // svファイルのフッターを出力する
 
-// 出力されるアセンブリプログラムの最大命令数(空行・コメント・ラベルは数えない)
-// ROM自体に固定容量は無く(ROM_SIZEはプログラムの命令数から自動算出する)，プログラムカウンタの
-// ビット幅(14ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える上限
-const int MAX_LINE_NUM = 16384;
-const char FUNC_REF_DELIM = '@';                  // 出力本体で関数参照を囲む区切り文字（命令名や数値との衝突を防ぐ）
-
-// 局所ラベル参照の仮文字列（プレースホルダ）
-// jmp/F系の飛び先ラベルは，いったんこの仮文字列で囲んで出力本体に埋め込み，
-// 全命令の変換後に resolve_labels が実値（jmp=絶対index，F系=相対オフセット）へ置換する
-const std::string LABEL_REF_ABS = "<<ABS:";       // jmp用ラベル参照の開始（絶対indexに解決される）
-const std::string LABEL_REF_REL = "<<REL:";       // F系用ラベル参照の開始（相対オフセットに解決される）
-const std::string LABEL_REF_CLOSE = ">>";         // ラベル参照の終端
+const std::uint64_t IMM_FLAG = 1ULL << 32;          // immの即値使用フラグ(imm[32])
+const std::string IMM_FLAG_SV = "33'h1_0000_0000 + "; // SystemVerilog上で即値使用フラグを立てる表記（後ろに即値を足す）
 
 // メイン関数: assemble_asm_to_svをそのまま呼ぶだけ
 // pn2sv.cppに直接組み込むビルド(ASM2SV_NO_MAIN定義時)ではmain多重定義を避けるため除外する
@@ -105,12 +87,13 @@ int main(int argc, char **argv) {
 }
 #endif
 
-// アセンブリをSystemVerilog ROMに変換する本処理
+// アセンブリをSystemVerilog ROMまたは実行ファイルに変換する本処理
 // 処理に成功したら0，失敗したら1を返り値にする
 int assemble_asm_to_sv(int argc, char **argv) {
     args_t args;              // コマンドライン引数
     std::ifstream asm_file;   // アセンブリファイル
-    std::ofstream sv_file;    // 出力ファイル
+    sv_writer sv;             // SystemVerilog ROMの出力先
+    bin_writer bin;           // 実行ファイルの出力先
 
     // コマンドライン引数を取得
     get_args(argc, argv, args);
@@ -120,11 +103,16 @@ int assemble_asm_to_sv(int argc, char **argv) {
         // アセンブリファイル名
         args.asm_file_name.empty()
         // 出力ファイル名
-        || args.sv_file_name.empty()
+        || (args.sv_file_name.empty() && args.bin_file_name.empty())
     ) {
         std::cout << "fail args" << std::endl;
         return 1;
     }
+
+    // 実行ファイル名の指定があれば実行ファイル，なければSystemVerilogを出力する
+    const bool output_bin = !args.bin_file_name.empty();
+    machine_writer &writer = output_bin ? static_cast<machine_writer &>(bin) : sv;
+    const std::string &output_file_name = output_bin ? args.bin_file_name : args.sv_file_name;
 
     // アセンブリファイルを開く
     asm_file.open(args.asm_file_name);
@@ -133,36 +121,40 @@ int assemble_asm_to_sv(int argc, char **argv) {
         return 1;
     }
 
-    // 出力ファイルを開く（テキストモードによる改行コード変換(LF→CRLF)を避けるためバイナリモードで開く）
-    sv_file.open(args.sv_file_name, std::ios::binary);
-    if (!sv_file) {
-        std::cout << "cannot open sv file: " << args.sv_file_name << std::endl;
-        return 1;
-    }
-
-    // アセンブリ言語をSystemVerilogに変換する
+    // アセンブリを出力先の形式に変換する
     try {
-        asm2sv(asm_file, sv_file);
-
-        // 正常終了を報告
-        std::cout << "assembled: " << args.sv_file_name << std::endl;
-
-        // ファイルを閉じる
-        asm_file.close();
-        sv_file.close();
-
-        return 0;
+        assemble(asm_file, writer);
     }
     catch (std::string msg) {
         std::cout << msg << std::endl;
 
         return 1;
     }
+
+    // 変換に成功した場合だけ出力ファイルを作る
+    // 失敗時に空や途中までのファイルを残すと，誤ってROMや/binへ置いてしまうため
+    // テキストモードによる改行コード変換(LF→CRLF)を避けるためバイナリモードで開く
+    std::ofstream output_file(output_file_name, std::ios::binary);
+    output_file << writer.content();
+    output_file.close();
+    if (!output_file) {
+        std::cout << "cannot write output file: " << output_file_name << std::endl;
+        return 1;
+    }
+
+    // 正常終了を報告
+    std::cout << "assembled: " << output_file_name << std::endl;
+
+    // ファイルを閉じる
+    asm_file.close();
+
+    return 0;
 }
 
 // コマンドライン引数を取得
 // -pt: 必須引数．アセンブリファイル名．
 // -sv: 出力ファイル名．省略した場合，アセンブリファイル名の拡張子を変更して同階層に出力される．
+// -bin: 実行ファイル名．指定した場合，SystemVerilogの代わりに実行ファイルを出力する．-svと同時には指定できない．
 // 何も指定せずに引数を置いた場合，アセンブリファイル名と解釈される．
 void get_args(int argc, char **argv, args_t &args) {
     // 全ての引数でループ(コマンド名は飛ばす)
@@ -181,6 +173,7 @@ void get_args(int argc, char **argv, args_t &args) {
             // 指定されたパラメータを保存
             if      (kind == "-pt")  args.asm_file_name = argv[i];
             else if (kind == "-sv")  args.sv_file_name  = argv[i];
+            else if (kind == "-bin") args.bin_file_name = argv[i];
         }
         // 指定子の直後ではないなら
         else {
@@ -193,8 +186,14 @@ void get_args(int argc, char **argv, args_t &args) {
         args.asm_file_name.length() >= 3
         && args.asm_file_name.substr(args.asm_file_name.length() - 3) == ".pt";
 
-    // 出力ファイル名が指定されていないなら，アセンブリ名の拡張子を .sv にして使う
-    if (asm_name_ok && args.sv_file_name.empty()) {
+    // 実行ファイルを出力するか
+    const bool output_bin = !args.bin_file_name.empty();
+
+    // -sv と -bin を両方指定したか（-sv の自動導出より前に，書かれた指定だけで判定する）
+    const bool both_output = output_bin && !args.sv_file_name.empty();
+
+    // SystemVerilogを出力するのに出力ファイル名が指定されていないなら，アセンブリ名の拡張子を .sv にして使う
+    if (asm_name_ok && !output_bin && args.sv_file_name.empty()) {
         // いったんアセンブリファイル名を入れる
         args.sv_file_name = args.asm_file_name;
 
@@ -206,60 +205,46 @@ void get_args(int argc, char **argv, args_t &args) {
         );
     }
 
-    // 出力ファイル名が .sv で終わっているか
+    // 出力ファイル名が .sv で終わっているか（実行ファイルを出力する場合は使わないため問わない）
     const bool sv_name_ok =
-        args.sv_file_name.length() >= 3
-        && args.sv_file_name.substr(args.sv_file_name.length() - 3) == ".sv";
+        output_bin
+        || (
+            args.sv_file_name.length() >= 3
+            && args.sv_file_name.substr(args.sv_file_name.length() - 3) == ".sv"
+        );
+
+    // 実行ファイル名のうちファイル名の部分(最後のパス区切りより後)が，空でなく拡張子を持たないか
+    // Qosmosは拡張子(.)を持たないファイルだけを実行ファイルとして探すため，拡張子付きの名前は受け付けない
+    // ディレクトリ部分の.(../binなど)は名前に関わらないため許す
+    const std::string bin_base_name = args.bin_file_name.substr(args.bin_file_name.find_last_of("/\\") + 1);
+    const bool bin_name_ok =
+        !output_bin
+        || (!bin_base_name.empty() && bin_base_name.find('.') == std::string::npos);
 
     // コマンドライン引数が不正ではないことをチェック
-    if (!asm_name_ok || !sv_name_ok) {
+    if (!asm_name_ok || both_output || !sv_name_ok || !bin_name_ok) {
         // メッセージ出力
         std::cout << "args fail" << std::endl
                   << "-pt: asm file name. e.g. ~~.pt" << std::endl
                   << "    actual: " << args.asm_file_name << std::endl
                   << "-sv: output file name. e.g. ~~.sv" << std::endl
-                  << "    actual: " << args.sv_file_name << std::endl;
+                  << "    actual: " << args.sv_file_name << std::endl
+                  << "-bin: executable file name without extension. e.g. HELLO (cannot be used with -sv)" << std::endl
+                  << "    actual: " << args.bin_file_name << std::endl;
 
         // 後の処理でエラーになるよう，コマンドライン引数をクリア
         args.asm_file_name.clear();
         args.sv_file_name.clear();
+        args.bin_file_name.clear();
     }
 }
 
-// アセンブリをSystemVerilogに変換する
-void asm2sv(std::ifstream &asm_file, std::ofstream &sv_file) {
-    // ヘッダーを出力する
-    output_header(sv_file);
-
-    // 機械語化した命令部分を出力する
-    output_body(asm_file, sv_file);
-
-    // フッターを出力する
-    output_footer(sv_file);
-
-    // バッファに溜まっている分を出力
-    sv_file.flush();
-}
-
-// svファイルのヘッダーを出力する
-void output_header(std::ofstream &sv_file) {
-    sv_file << "`include \"rom.svh\"\n"
-            << "`include \"machine.svh\"\n"
-            << "\n"
-            << "module rom_sv(\n"
-            << "    input logic clk,\n"
-            << "    rom_read_if.slave rom_read\n"
-            << "    );\n"
-            << "    import machine_p::*;\n"
-            << "\n";
-}
-
-// 機械語化した命令部分を出力する
-void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
-    std::map<std::string, std::size_t> functions;     // 関数とその開始pc
+// アセンブリを機械語にし，出力先の形式で書き出す
+// 関数・局所ラベルは後ろで定義されたものも参照できるため，全ての行を命令にして参照を解決してから書き出す
+void assemble(std::ifstream &asm_file, machine_writer &writer) {
+    std::map<std::string, std::size_t> functions;     // 関数とその先頭index
     std::map<std::string, local_label_t> local_labels; // 局所ラベルとその位置・定義した関数
-    std::vector<std::string> instructions;            // 機械語にした命令一覧（1要素=1命令）
-    std::vector<std::string> instruction_functions;   // 各命令が属する関数名（instructionsと同じ並び）
+    std::vector<instruction_t> instructions;          // アセンブルした命令一覧（1要素=1命令）
 
     // .global 行を取得し，宣言された関数名を読み込む
     std::string global_line = read_global_line(asm_file);
@@ -270,26 +255,26 @@ void output_body(std::ifstream &asm_file, std::ofstream &sv_file) {
         throw std::string("asm syntax error: main function not found");
     }
 
-    // 本体をアセンブルする（functions/local_labels のpc確定 + instructions/instruction_functions 生成）
-    assemble_body(asm_file, functions, local_labels, instructions, instruction_functions);
+    // 本体をアセンブルする（functions/local_labels の位置確定 + instructions 生成）
+    assemble_body(asm_file, writer, functions, local_labels, instructions);
 
     // .global で宣言された関数がすべて定義されているか確認する
-    // pcがnposのまま残っていれば，宣言だけで定義(ラベル)がない関数
+    // indexがnposのまま残っていれば，宣言だけで定義(ラベル)がない関数
     for (const auto &function : functions) {
         if (function.second == std::string::npos) {
             throw "asm syntax error: declared but not defined function '" + function.first + "'";
         }
     }
 
-    // 局所ラベル参照を解決する（絶対index/相対オフセット）
-    resolve_labels(instructions, instruction_functions, local_labels);
+    // 関数・局所ラベルの参照を解決する（関数・jmpはPC，F系は相対オフセット）
+    resolve_refs(instructions, functions, local_labels, writer.base_pc());
 
-    // 命令数をlocalparam，machine_t配列として出力する
-    const std::string body = function_name2line_num(functions, join_instructions(instructions));
-    sv_file << "    localparam integer ROM_SIZE = " << instructions.size() << ";\n\n";
-    sv_file << "    (* rom_style = \"block\" *) machine_t machines[0:ROM_SIZE - 1] = {\n";
-    sv_file << body;
-    sv_file << "    };\n";
+    // 命令列を出力先の形式で書き出す
+    writer.write_header(instructions.size());
+    for (const instruction_t &instruction : instructions) {
+        writer.write_instruction(instruction);
+    }
+    writer.write_footer();
 }
 
 // .global行まで読み飛ばし，コメントを除いて返す
@@ -382,13 +367,13 @@ void get_function_names(
     }
 }
 
-// 本体をアセンブルしfunctions/local_labels/instructions/instruction_functionsを埋める
-// 命令のpcは instructions のインデックスに対応する
+// 本体をアセンブルしfunctions/local_labels/instructionsを埋める
+// 命令の先頭からの位置は instructions のインデックスに対応する
 void assemble_body(
-    std::ifstream &asm_file, std::map<std::string, std::size_t> &functions,
+    std::ifstream &asm_file, const machine_writer &writer,
+    std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
-    std::vector<std::string> &instructions,
-    std::vector<std::string> &instruction_functions
+    std::vector<instruction_t> &instructions
 ) {
     std::string line;                       // アセンブリファイルの一文
     std::string current_function;           // 現在変換中の関数名
@@ -444,7 +429,7 @@ void assemble_body(
                 throw "asm syntax error: function without ret '" + current_function + "'";
             }
 
-            // 関数の先頭pcを記録し，現在の関数を更新する
+            // 関数の先頭indexを記録し，現在の関数を更新する
             functions[function_name] = instructions.size();
             current_function = function_name;
             current_has_ret = false;
@@ -460,22 +445,28 @@ void assemble_body(
         std::string command = trimmed.substr(0, str_find_first_of(trimmed, ' '));
         if (command == "ret") current_has_ret = true;
 
-        // アセンブリを機械語にしてinstructionsに追加する
-        output_instruction_line(instructions, functions, code);
-        // 命令が属する関数を記録する（局所ラベル参照が同じ関数内か確かめるため）
-        instruction_functions.push_back(current_function);
+        // アセンブリを命令にし，属する関数を記録してinstructionsに追加する
+        // 属する関数は，局所ラベル参照が同じ関数内か確かめるために使う
+        instruction_t instruction = assemble_line(functions, code);
+        instruction.function = current_function;
+        instructions.push_back(instruction);
 
-        // mainはCALLできず戻り先が無いため，main内のretはすべてプログラムの終了を表す
+        // ROMではmainをCALLできず戻り先が無いため，main内のretはすべてプログラムの終了を表す
         // 自分自身へのjmp(無限ループ)に置き換えて，どの経路でmainを抜けても同じ終了状態にする
         // 先頭から最初に現れるretだけを置き換える方式は，早期returnがあると末尾のretが残るため採用しない
-        if (current_function == "main" && command == "ret") {
-            const std::size_t pc = instructions.size() - 1;
-            instructions[pc] = "jmp(0, 33'h1_0000_0000 + " + std::to_string(pc) + ")";
+        // 実行ファイルではシェルがmainをCALLするため，retのまま残してシェルへ戻す
+        if (writer.main_ret_halts() && current_function == "main" && command == "ret") {
+            const std::size_t pc = writer.base_pc() + instructions.size() - 1;    // このretのPC
+            instructions.back().command = "jmp";
+            instructions.back().operands = {
+                {"0", 0, ref_t::NONE, ""},
+                {IMM_FLAG_SV + std::to_string(pc), IMM_FLAG | pc, ref_t::NONE, ""},
+            };
         }
 
-        // 最大命令数を超えた
-        if (static_cast<int>(instructions.size()) > MAX_LINE_NUM) {
-            throw std::string("asm syntax error: instructions more than ") + std::to_string(MAX_LINE_NUM);
+        // 出力先の最大命令数を超えた
+        if (instructions.size() > writer.max_instructions()) {
+            throw std::string("asm syntax error: instructions more than ") + std::to_string(writer.max_instructions());
         }
     }
 
@@ -485,10 +476,9 @@ void assemble_body(
     }
 }
 
-// アセンブリ一行を機械語化しinstructionsへ追加する
+// アセンブリ一行を命令にする(属する関数は呼び出し側が記録する)
 // lineはコメントを除いた，空白以外の文字を含む行とする
-void output_instruction_line(
-    std::vector<std::string> &instructions,
+instruction_t assemble_line(
     const std::map<std::string, std::size_t> &functions, std::string line
 ) {
     // タブ文字は非対応
@@ -509,29 +499,26 @@ void output_instruction_line(
     const std::vector<std::string> args = split_args(
         line.substr(std::min(command.length() + 1, line.length()))  // 引数がなかった時のためstd::min
     );
-    const command_form_t &form = select_form(functions, commands.at(command), args, command);
+    const command_form_t &form = select_form(functions, commands.at(command).forms, args, command);
 
     // 命令本体を組み立てる
-    std::string instr = get_machine_function_name(command) + "(";
+    instruction_t instruction;
+    instruction.command = command;
 
     // 機械語の引数を形式の順に並べる
     // ZEROは0を出し，それ以外は書かれた引数を先頭から順に受け取る
     int arg_num = 0;
     for (std::size_t i = 0; i < form.size(); i++) {
-        if (i != 0) instr += ", ";
-
         if (form[i] == arg_t::ZERO) {
-            instr += "0";
+            instruction.operands.push_back({"0", 0, ref_t::NONE, ""});
             continue;
         }
 
-        instr += convert_arg(functions, args[arg_num], form[i], command);
+        instruction.operands.push_back(convert_arg(functions, args[arg_num], form[i], command));
         arg_num++;
     }
 
-    // 命令を閉じて追加する
-    instr += ")";
-    instructions.push_back(instr);
+    return instruction;
 }
 
 // コメントを除いたアセンブリ一行の引数部分を空白区切りで取り出す
@@ -670,7 +657,7 @@ bool matches_form(
                 if (arg.empty() || arg[0] != '.') return false;
                 break;
 
-            // 即値は数値表記か，先頭indexに解決される関数名
+            // 即値は数値表記か，先頭PCに解決される関数名
             case arg_t::RAW_DATA:
                 if (
                     !is_number_notation(arg) && !is_negative_notation(arg)
@@ -697,18 +684,6 @@ int written_arg_num(const command_form_t &form) {
     }
 
     return num;
-}
-
-// ニーモニックをmachine.svh側の関数名に変換する
-// SystemVerilog予約語と衝突するand/or/xor/not/nandは末尾に_を付ける
-std::string get_machine_function_name(const std::string &command) {
-    if (command == "and") return "and_";
-    if (command == "or") return "or_";
-    if (command == "xor") return "xor_";
-    if (command == "not") return "not_";
-    if (command == "nand") return "nand_";
-
-    return command;
 }
 
 // 全ての桁がその基数で表せるかを返す(桁が一つもなければ数値ではないとする)
@@ -770,45 +745,43 @@ std::string get_bit_length_of_command(const arg_t arg_type) {
     }
 }
 
-// 機械語関数の引数を加工して返す
-std::string convert_arg(
+// 書かれた引数を機械語の引数(SystemVerilog上の表記と値)にする
+// 関数名・局所ラベルは位置が確定していないため参照として返し，resolve_refsが表記と値を埋める
+operand_t convert_arg(
     const std::map<std::string, std::size_t> &functions,
     const std::string &arg, const arg_t arg_type, const std::string &command
 ) {
     std::string converted_arg = arg;   // 引数は加工できないので，加工用の変数を用意
 
     // 引数が局所ラベルなら (jmp/F系の飛び先)
-    // 飛び先は局所ラベルのみ．ここではプレースホルダを埋め，resolve_labelsで実値に解決する
+    // 飛び先は局所ラベルのみ．ここでは参照として返し，resolve_refsで実値に解決する
     if (arg_type == arg_t::LABEL) {
         // ラベルは先頭が '.'
         if (converted_arg.empty() || converted_arg[0] != '.') {
             throw "asm syntax error: jump target must be a local label '" + arg + "'";
         }
 
-        // jmpは絶対index，F系は相対オフセットに解決する（命令名で区別）
-        // 後で resolve_labels が置換する仮文字列で囲んで埋め込む
-        const std::string open = (command == "jmp") ? LABEL_REF_ABS : LABEL_REF_REL;
-        return "33'h1_0000_0000 + " + open + converted_arg + LABEL_REF_CLOSE;
+        // jmpは絶対PC，F系は相対オフセットに解決する（命令名で区別）
+        const ref_t ref = (command == "jmp") ? ref_t::LABEL_ABS : ref_t::LABEL_REL;
+        return {"", 0, ref, converted_arg};
     }
 
-    // 引数が関数名なら (callの呼び出し先，または即値の位置に書いた関数の先頭index)
+    // 引数が関数名なら (callの呼び出し先，または即値の位置に書いた関数の先頭PC)
     // 関数名として解決するのは関数名・即値の位置だけ．レジスタ・マスクの位置では解決せず，
     // 通常の引数として検証するため，関数名は後続の種類・数値表記の検証でエラーになる
     if (
         (arg_type == arg_t::FUNC_NAME || arg_type == arg_t::RAW_DATA)
         && functions.find(converted_arg) != functions.end()
     ) {
-        // mainはプログラムの開始点で，呼び出しても戻り先へ復帰できない(main内のretは自分自身へのjmpになる)
+        // mainはプログラムの開始点で，呼び出しても戻り先へ復帰できない(ROMではmain内のretは自分自身へのjmpになる)
         // 間接呼び出しも防ぐため，callの呼び出し先だけでなく番地の取得もエラーにする
         if (converted_arg == "main") {
             if (arg_type == arg_t::FUNC_NAME) throw std::string("asm syntax error: cannot call 'main'");
             throw std::string("asm syntax error: cannot take the address of 'main'");
         }
 
-        // 関数名を区切り文字で囲み，先頭indexを即値として渡すため即値使用フラグを立てて返す
-        // function_name2line_num が囲まれたトークンだけを行番号へ置換するため，
-        // 関数名が命令名や数値の一部と一致して誤置換されることを防げる
-        return std::string("33'h1_0000_0000 + ") + FUNC_REF_DELIM + converted_arg + FUNC_REF_DELIM;
+        // 関数の参照として返し，resolve_refsが先頭PCを即値として埋める
+        return {"", 0, ref_t::FUNCTION, converted_arg};
     }
 
     // 引数がレジスタなら
@@ -845,6 +818,9 @@ std::string convert_arg(
         throw "asm syntax error: fail number notation '" + arg + "'";
     }
 
+    // 負でない値は，表記を書き直す前に数値化しておく(負の値は下の即値の処理で数値化する)
+    std::uint64_t number = (converted_arg[0] == '-') ? 0 : notation2value(converted_arg);    // 引数の値
+
     // 引数が十進数表記ではない(末尾が基数接尾辞)なら，Verilogでの表記に書き直す
     const char last = converted_arg[converted_arg.length() - 1];
     if (last == 'b' || last == 'o' || last == 'h') {
@@ -872,12 +848,16 @@ std::string convert_arg(
             }
 
             converted_arg = offset2imm(static_cast<long>(value));
+            number = static_cast<std::uint32_t>(value);
         }
-        converted_arg = "33'h1_0000_0000 + " + converted_arg;
+        converted_arg = IMM_FLAG_SV + converted_arg;
+
+        // イミディエイトデータ(32bit)に即値使用フラグを立てる
+        number = IMM_FLAG | (number & 0xffffffff);
     }
 
     // 加工した引数を返す
-    return converted_arg;
+    return {converted_arg, number, ref_t::NONE, ""};
 }
 
 // タブ文字があればエラーにする
@@ -887,57 +867,59 @@ void throw_if_tab(const std::string &line) {
     }
 }
 
-// 局所ラベル参照を絶対index/相対オフセットに解決する
-// 各命令のインデックスがそのまま自命令のpcになるため，ループのpcを使って計算できる
-// jmp（絶対）はラベルのindex，F系（相対）は「ラベルのindex − 自命令pc」に置換する
-void resolve_labels(
-    std::vector<std::string> &instructions,
-    const std::vector<std::string> &instruction_functions,
-    const std::map<std::string, local_label_t> &local_labels
+// 関数・局所ラベルの参照を解決し，引数のSystemVerilog上の表記と値を埋める
+// 各命令のインデックスがそのまま先頭の命令からの位置になるため，ループのindexを使って計算できる
+// 関数・jmp（絶対）は「先頭の命令のPC + 参照先のindex」，F系（相対）は「ラベルのindex − 自命令のindex」に解決する
+void resolve_refs(
+    std::vector<instruction_t> &instructions,
+    const std::map<std::string, std::size_t> &functions,
+    const std::map<std::string, local_label_t> &local_labels,
+    const std::size_t base_pc
 ) {
-    for (std::size_t pc = 0; pc < instructions.size(); pc++) {
-        std::string &instr = instructions[pc];
+    for (std::size_t index = 0; index < instructions.size(); index++) {
+        for (operand_t &operand : instructions[index].operands) {
+            // 参照を持たない引数は何もしない（大多数はここで抜ける）
+            if (operand.ref == ref_t::NONE) continue;
 
-        // 開きタグを探し，ラベル参照の有無と種別（絶対/相対）を判定する
-        bool is_abs = true;
-        std::size_t open_pos = instr.find(LABEL_REF_ABS);
-        if (open_pos == std::string::npos) {
-            open_pos = instr.find(LABEL_REF_REL);
-            is_abs = false;
+            std::string imm;              // 解決した即値のSystemVerilog上の表記
+            std::uint32_t imm_value = 0;  // 解決した即値
+
+            // 関数なら，その先頭PCにする
+            if (operand.ref == ref_t::FUNCTION) {
+                const std::size_t pc = base_pc + functions.at(operand.name);
+                imm = std::to_string(pc);
+                imm_value = static_cast<std::uint32_t>(pc);
+            }
+            // 局所ラベルなら，定義を確かめてからPCまたは相対オフセットにする
+            else {
+                // 参照先ラベルが定義されているか
+                auto label = local_labels.find(operand.name);
+                if (label == local_labels.end()) {
+                    throw "asm syntax error: undefined label reference '" + operand.name + "'";
+                }
+                // 参照先ラベルが参照元と同じ関数内に定義されているか
+                if (label->second.function != instructions[index].function) {
+                    throw "asm syntax error: label '" + operand.name + "' defined in '" + label->second.function
+                        + "' referenced from '" + instructions[index].function + "'";
+                }
+
+                // jmp（絶対）はラベルのPC，F系（相対）は「ラベルのindex − 自命令のindex」に解決する
+                if (operand.ref == ref_t::LABEL_ABS) {
+                    const std::size_t pc = base_pc + label->second.index;
+                    imm = std::to_string(pc);
+                    imm_value = static_cast<std::uint32_t>(pc);
+                }
+                else {
+                    const long offset = static_cast<long>(label->second.index) - static_cast<long>(index);
+                    imm = offset2imm(offset);
+                    imm_value = static_cast<std::uint32_t>(offset);
+                }
+            }
+
+            // 即値使用フラグを立てて埋める
+            operand.sv = IMM_FLAG_SV + imm;
+            operand.value = IMM_FLAG | imm_value;
         }
-
-        // ラベル参照を持たない命令は何もしない（大多数はここで抜ける）
-        if (open_pos == std::string::npos) continue;
-
-        // 開きタグと終端タグの間からラベル名を取り出す
-        const std::size_t name_start =
-            open_pos + (is_abs ? LABEL_REF_ABS : LABEL_REF_REL).length();
-        const std::size_t close_pos = instr.find(LABEL_REF_CLOSE, name_start);
-        const std::string label_name = instr.substr(name_start, close_pos - name_start);
-
-        // 参照先ラベルが定義されているか
-        auto label = local_labels.find(label_name);
-        if (label == local_labels.end()) {
-            throw "asm syntax error: undefined label reference '" + label_name + "'";
-        }
-        // 参照先ラベルが参照元と同じ関数内に定義されているか
-        if (label->second.function != instruction_functions[pc]) {
-            throw "asm syntax error: label '" + label_name + "' defined in '" + label->second.function
-                + "' referenced from '" + instruction_functions[pc] + "'";
-        }
-
-        // jmp（絶対）はラベルのindex，F系（相対）は「ラベルのindex − 自命令pc」に解決する
-        std::string value;
-        if (is_abs) {
-            value = std::to_string(label->second.index);
-        }
-        else {
-            const long offset = static_cast<long>(label->second.index) - static_cast<long>(pc);
-            value = offset2imm(offset);
-        }
-
-        // 仮文字列（開きタグ〜終端タグ）を実値に置換する
-        instr.replace(open_pos, close_pos + LABEL_REF_CLOSE.length() - open_pos, value);
     }
 }
 
@@ -951,52 +933,4 @@ std::string offset2imm(const long offset) {
     char buf[16];
     snprintf(buf, sizeof(buf), "32'h%08x", static_cast<unsigned int>(offset));
     return std::string(buf);
-}
-
-// 命令を結合する（各命令を8スペースインデントし，カンマ区切りで並べる）
-// SystemVerilogの配列初期化子では末尾カンマが構文エラーになるため，末尾要素にはカンマを付けない
-std::string join_instructions(const std::vector<std::string> &instructions) {
-    std::string body;
-    for (std::size_t i = 0; i < instructions.size(); i++) {
-        body += "        " + instructions[i];
-        if (i + 1 < instructions.size()) body += ",";
-        body += "\n";
-    }
-    return body;
-}
-
-// 関数参照を行番号に置換する
-std::string function_name2line_num(
-    const std::map<std::string, std::size_t> &functions, const std::string &body
-) {
-    std::string rtn = body;  // 引数は加工できないので，加工用の変数を用意
-
-    // 区切り文字で囲まれた関数参照（@func@ など）を対応する行番号に置換する
-    // 区切り文字で囲んでいるため，f1 と f11 のような接頭辞の衝突や，
-    // 関数名が命令名・数値の一部に一致することによる誤置換が起きない
-    for (const auto &function : functions) {
-        replace(
-            rtn,
-            FUNC_REF_DELIM + function.first + FUNC_REF_DELIM,
-            std::to_string(function.second)
-        );
-    }
-
-    return rtn;
-}
-
-// svファイルのフッターを出力する
-void output_footer(std::ofstream &sv_file) {
-    sv_file << "\n"
-            << "    always_ff @(posedge clk) begin\n"
-            << "        rom_read.valid <= (rom_read.pc < ROM_SIZE);\n"
-            << "\n"
-            << "        if (rom_read.pc < ROM_SIZE) begin\n"
-            << "            rom_read.machine <= machines[rom_read.pc];\n"
-            << "        end else begin\n"
-            << "            rom_read.machine <= nop();\n"
-            << "        end\n"
-            << "    end\n"
-            << "\n"
-            << "endmodule\n";
 }
