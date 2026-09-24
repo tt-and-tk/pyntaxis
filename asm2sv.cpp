@@ -164,9 +164,14 @@ int assemble_asm_to_sv(int argc, char **argv) {
 
 // コマンドライン引数を取得
 // -pt: 必須引数．アセンブリファイル名．
-// -sv: 出力ファイル名．省略した場合，アセンブリファイル名の拡張子を変更して同階層に出力される．
-// -bin: 実行ファイル名．指定した場合，SystemVerilogの代わりに実行ファイルを出力する．-svと同時には指定できない．
+// -sv: SystemVerilog ROMのファイル名．省略した場合，アセンブリファイル名の拡張子を変更して同階層に出力される．
+// -bin: 実行ファイル名．
 // 何も指定せずに引数を置いた場合，アセンブリファイル名と解釈される．
+// 出力するファイルは -sv・-bin の指定で次のように決まる．
+//   どちらも指定しない: SystemVerilog ROM(アセンブリファイル名から決めた名前)
+//   -sv のみ: SystemVerilog ROM
+//   -bin のみ: 実行ファイル
+//   両方: 引数エラー
 void get_args(int argc, char **argv, args_t &args) {
     bool output_bin = false;    // 実行ファイルを出力するか(-binが書かれていれば，値が欠けていても出力を求めたものとする)
 
