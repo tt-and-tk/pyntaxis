@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 GitHubリポジトリ名: `tt-and-tk/pyntaxis`．
 
-PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフトウェア群(アセンブラ・コンパイラ)からなる自作PCプロジェクトの一部．プロジェクト全体は以下の独立したGitHubリポジトリで構成される．
+PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフトウェア群(アセンブラ・コンパイラ・OS)からなる自作PCプロジェクトの一部．プロジェクト全体は以下の独立したGitHubリポジトリで構成される．
 
 | リポジトリ(GitHub) | ディレクトリ(`pc/`配下) | 役割 |
 |:-|:-|:-|
