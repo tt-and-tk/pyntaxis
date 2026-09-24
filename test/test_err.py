@@ -33,7 +33,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmpdir:
         for asm_file in asm_files:
             asm_path = os.path.join(ASM_ERR_DIR, asm_file)
-            sv_path = os.path.join(tmpdir, asm_file.replace(".pt", ".sv"))
+            sv_path = os.path.join(tmpdir, os.path.splitext(asm_file)[0] + ".sv")
 
             # 出力は入力由来の日本語を含みうるため，Windows既定のcp932ではなくUTF-8で読む
             result = subprocess.run(
