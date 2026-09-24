@@ -136,10 +136,15 @@ int assemble_asm_to_sv(int argc, char **argv) {
     // 失敗時に空や途中までのファイルを残すと，誤ってROMや/binへ置いてしまうため
     // テキストモードによる改行コード変換(LF→CRLF)を避けるためバイナリモードで開く
     std::ofstream output_file(output_file_name, std::ios::binary);
+    if (!output_file) {
+        std::cout << "cannot open output file: " << output_file_name << std::endl;
+        return 1;
+    }
     output_file << writer.content();
     output_file.close();
 
-    // 開けなかった・書き込みの途中で失敗した場合も，書きかけのファイルを残さない
+    // 書き込みの途中で失敗した場合も，書きかけのファイルを残さない
+    // 開けなかった場合に削除しないのは，開けなかった既存のファイルやディレクトリを消してしまうため
     if (!output_file) {
         std::remove(output_file_name.c_str());
         std::cout << "cannot write output file: " << output_file_name << std::endl;
