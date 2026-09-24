@@ -12,6 +12,11 @@
 #include "machine_writer.hpp"
 #include "util.hpp"
 
+// このファイル内でしか使わない型
+// (pn2sv.exeへのリンク時に，コンパイラ側の同名の型(pn2asm.cppのargs_tなど)と暗黙のメンバ関数が
+//  1つにまとめられて食い違わないよう，無名名前空間に入れて内部リンケージにする)
+namespace {
+
 // コマンドライン引数情報
 typedef struct {
     std::string asm_file_name;    // アセンブリファイル名
@@ -24,6 +29,8 @@ typedef struct {
     std::size_t index;            // ラベルの位置（直後の命令のindex）
     std::string function;         // ラベルを定義した関数名
 } local_label_t;
+
+}
 
 // 関数
 // (assemble_asm_to_sv以外はこのファイル内でしか使わないため，pn2sv.exeへのリンク時に
