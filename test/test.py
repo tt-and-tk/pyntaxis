@@ -33,7 +33,7 @@ def main():
 
     for asm_file in asm_files:
         asm_path = os.path.join(ASM_DIR, asm_file)
-        sv_name = asm_file.replace(".pt", ".sv")
+        sv_name = os.path.splitext(asm_file)[0] + ".sv"
         sv_path = os.path.join(SV_DIR, sv_name)
         ans_path = os.path.join(SV_ANS_DIR, sv_name)
 
