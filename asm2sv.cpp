@@ -158,7 +158,7 @@ int assemble_asm_to_sv(int argc, char **argv) {
 // -bin: 実行ファイル名．指定した場合，SystemVerilogの代わりに実行ファイルを出力する．-svと同時には指定できない．
 // 何も指定せずに引数を置いた場合，アセンブリファイル名と解釈される．
 void get_args(int argc, char **argv, args_t &args) {
-    bool bin_specified = false;    // -binが書かれたか(値が欠けていても実行ファイルの出力を求めたものとする)
+    bool output_bin = false;    // 実行ファイルを出力するか(-binが書かれていれば，値が欠けていても出力を求めたものとする)
 
     // 全ての引数でループ(コマンド名は飛ばす)
     for (int i = 1; i < argc; i++) {
@@ -169,7 +169,7 @@ void get_args(int argc, char **argv, args_t &args) {
             std::string kind = arg;   // 指定を保存
 
             // 値の無い -bin で黙ってSystemVerilogを出力しないよう，値を読む前に指定を覚えておく
-            if (kind == "-bin") bin_specified = true;
+            if (kind == "-bin") output_bin = true;
 
             // インクリメントして次のパラメータを取得
             i++;
@@ -191,9 +191,6 @@ void get_args(int argc, char **argv, args_t &args) {
     const bool asm_name_ok =
         args.asm_file_name.length() >= 3
         && args.asm_file_name.substr(args.asm_file_name.length() - 3) == ".pt";
-
-    // 実行ファイルを出力するか
-    const bool output_bin = bin_specified;
 
     // -sv と -bin を両方指定したか（-sv の自動導出より前に，書かれた指定だけで判定する）
     const bool both_output = output_bin && !args.sv_file_name.empty();
