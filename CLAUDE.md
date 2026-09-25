@@ -12,7 +12,7 @@ PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフト
 |:-|:-|:-|
 | `specification` | `specification/` | CPUアーキテクチャ・ISA・アセンブリ言語・コンパイラ・Qosmosの仕様のドキュメント(唯一の一次情報源) |
 | `pyntaxis`(本リポジトリ) | `assembler/` | 自作アセンブリ言語Pyntaxis(`.pt`) → SystemVerilog ROM(`.sv`)，または自作OS Qosmosの実行ファイルへのアセンブラ |
-| `pynesis` | `compiler/` | 自作プログラミング言語Pynesis(`.pn`) → アセンブリ言語Pyntaxisへのコンパイラ．本リポジトリのソースファイルをincludeして使用し，`.sv`まで一貫変換も可能 |
+| `pynesis` | `compiler/` | 自作プログラミング言語Pynesis(`.pn`) → アセンブリ言語Pyntaxisへのコンパイラ．本リポジトリのソースファイルをincludeして使用し，`.sv`または実行ファイルまで一貫変換も可能 |
 | `qurge` | `mypc/` | CPU・メモリ・ROM等のハードウェア全体のVivadoプロジェクト(SystemVerilog + PS側C++)と，ROM上で動く自作OS Qosmos(シェルやファイルシステムなど．Pynesisで記述．仕様は`specification`の`qosmos.md`) |
 | `for-pynthesis-skills` | `for-pynthesis-skills/` | 上記各リポジトリで共有するissue起票・対応支援スキルを提供する．特定のリポジトリが主担当と判断できない，全リポジトリに影響するissueの起票先(受け皿)でもある |
 
@@ -24,7 +24,7 @@ PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフト
 
 **ビルド:**
 ```
-g++ -o asm2sv.exe asm2sv.cpp
+g++ -o asm2mc.exe asm2mc.cpp
 ```
 
 **テスト(`test/` ディレクトリで実行):**
@@ -38,11 +38,11 @@ python test_bin.py    # 実行ファイル: test/asm_bin/*.pt を test/bin/ へ�
 
 **単体実行:**
 ```
-asm2sv.exe input.pt -sv output.sv
+asm2mc.exe input.pt -sv output.sv
 rem または(-sv 省略時は input.sv が生成される)
-asm2sv.exe input.pt
+asm2mc.exe input.pt
 rem 実行ファイルを出力する場合(拡張子の無い8文字以内の名前を指定する．-sv とは同時に指定できない)
-asm2sv.exe input.pt -bin OUTPUT
+asm2mc.exe input.pt -bin OUTPUT
 ```
 
 ## Issue対応の徹底

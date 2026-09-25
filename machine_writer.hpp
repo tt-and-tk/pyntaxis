@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-#include "asm2sv.hpp"
+#include "asm2mc.hpp"
 
 // アセンブルした命令列の出力先
 // 出力先ごとに，命令を置くPC・命令数の上限・mainのretの扱いと，出力の形式が異なる

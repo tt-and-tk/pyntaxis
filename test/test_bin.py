@@ -16,7 +16,7 @@ ASM_BIN_DIR = os.path.join(SCRIPT_DIR, "asm_bin")
 ASM_BIN_ERR_DIR = os.path.join(SCRIPT_DIR, "asm_bin_err")
 BIN_DIR = os.path.join(SCRIPT_DIR, "bin")
 BIN_ANS_DIR = os.path.join(SCRIPT_DIR, "bin_ans")
-ASM2SV = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2sv.exe")
+ASM2MC = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2mc.exe")
 
 INSTRUCTION_SIZE = 8  # 実行ファイルでの1命令のバイト数
 EXPECT_PREFIX = "; expect: "  # 異常系の期待するエラーメッセージを書く1行目の接頭辞
@@ -26,7 +26,7 @@ def run(args):
     """アセンブラを実行し，終了コードと出力(標準出力と標準エラー出力)を返す．"""
     # 出力は入力由来の日本語を含みうるため，Windows既定のcp932ではなくUTF-8で読む
     result = subprocess.run(
-        [ASM2SV] + args,
+        [ASM2MC] + args,
         capture_output=True,
         encoding="utf-8",
         errors="backslashreplace",
