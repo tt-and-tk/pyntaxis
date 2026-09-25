@@ -1,3 +1,4 @@
+; expect: asm syntax error: fail argument count 'rmr fh r16 r1' (expected 'rmr <mask> <register> <register> <immediate>')
 ; rmrのイミディエイトデータ省略 → エラーになるべき
 ; rmrは番地をrs1+immで求めるため，immを省略できない
 

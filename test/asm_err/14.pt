@@ -1,3 +1,4 @@
+; expect: asm syntax error: main function not found
 ; main関数欠如のエラーテスト（異常系）
 ; .global に main が宣言されていないとエラーになるべき
 

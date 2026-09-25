@@ -1,3 +1,4 @@
+; expect: asm syntax error: instructions more than 4096
 ; 命令数が実行ファイルの上限(4096命令)を超えた → エラーになるべき
 
 .global main

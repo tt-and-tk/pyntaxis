@@ -1,3 +1,4 @@
+; expect: asm syntax error: fail number notation '-1'
 ; 負の値をマスクの位置に書いた → エラーになるべき
 ; 負の値を書けるのは即値の位置だけ
 

@@ -1,3 +1,4 @@
+; expect: asm syntax error: instructions more than 16384
 ; 命令数がMAX_LINE_NUM(16384)を1命令超えるとエラーになることを確認する
 
 .global main

@@ -1,3 +1,4 @@
+; expect: asm syntax error: label '.L0' defined in 'main' referenced from 'func'
 ; 関数末尾の局所ラベルを次の関数から参照した → エラーになるべき
 ; .L0 のindexはfuncの先頭と一致するが，定義したmainに属する
 

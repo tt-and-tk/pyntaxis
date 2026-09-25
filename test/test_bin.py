@@ -2,7 +2,8 @@
 実行ファイルの出力(-bin)を確認するテストスクリプト．
 - 正常系: test/asm_bin/*.pt を全て実行ファイルに変換して test/bin/ へ出力し，test/bin_ans/ の期待値とバイト単位で比較する．
   期待値のファイル名は，出力と同じく.ptを除いた名前(拡張子なし)とする．
-- 異常系: test/asm_bin_err/*.pt を全て実行ファイルに変換し，構文エラーになることを確認する．
+- 異常系: test/asm_bin_err/*.pt を全て実行ファイルに変換し，出力が各ファイルの1行目に「; expect: <期待するメッセージ>」の形で書いたメッセージと完全に一致するエラーになることを確認する．
+  構文エラーのメッセージが出たかだけでは，確かめたい誤りとは別の誤りで失敗した場合も成功とみなしてしまうため，メッセージ全体を照合する．
 - 引数の誤り: -svとの同時指定・Qosmosの実行ファイル名として使えない名前・値の無い-binなどが，引数エラーになり出力ファイルを作らないことと，ちょうど8文字の実行ファイル名は出力できることを確認する．
 """
 
@@ -18,6 +19,7 @@ BIN_ANS_DIR = os.path.join(SCRIPT_DIR, "bin_ans")
 ASM2SV = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2sv.exe")
 
 INSTRUCTION_SIZE = 8  # 実行ファイルでの1命令のバイト数
+EXPECT_PREFIX = "; expect: "  # 異常系の期待するエラーメッセージを書く1行目の接頭辞
 
 
 def run(args):
@@ -36,6 +38,16 @@ def run(args):
 def list_asm(directory):
     """ディレクトリ内の.ptファイル名を名前順に返す．"""
     return sorted(f for f in os.listdir(directory) if f.endswith(".pt"))
+
+
+def read_expected(asm_path):
+    """入力ファイルの1行目に書かれた期待するエラーメッセージを返す．書かれていなければ None を返す．"""
+    # 期待するメッセージは入力由来の日本語を含みうるため，UTF-8で読む
+    with open(asm_path, encoding="utf-8") as f:
+        first_line = f.readline().rstrip("\r\n")
+    if not first_line.startswith(EXPECT_PREFIX):
+        return None
+    return first_line[len(EXPECT_PREFIX):].strip()
 
 
 def instructions_of(data):
@@ -99,20 +111,30 @@ def check_error():
     fail = 0
 
     for asm_file in list_asm(ASM_BIN_ERR_DIR):
+        asm_path = os.path.join(ASM_BIN_ERR_DIR, asm_file)
         bin_path = os.path.join(BIN_DIR, "ERR" + asm_file[:-len(".pt")])
 
         # 前回の出力が残っていると，出力しなかったことを確かめられないため消しておく
         if os.path.exists(bin_path):
             os.remove(bin_path)
 
-        returncode, output = run([os.path.join(ASM_BIN_ERR_DIR, asm_file), "-bin", bin_path])
+        returncode, output = run([asm_path, "-bin", bin_path])
 
-        # 終了コード1 かつ 構文エラーのメッセージが含まれ，出力ファイルを作っていなければエラー検出成功
-        if returncode == 1 and "asm syntax error" in output and not os.path.exists(bin_path):
+        # 1行目に期待するメッセージがなければエラー
+        expected = read_expected(asm_path)
+        if expected is None:
+            fail += 1
+            print(f"[FAIL] {asm_file}: 1行目に期待するメッセージ({EXPECT_PREFIX}...)がありません (output={output!r})")
+            continue
+
+        # 終了コード1 かつ 出力が期待値と一致し，出力ファイルを作っていなければエラー検出成功
+        if returncode == 1 and output == expected and not os.path.exists(bin_path):
             print(f"[OK]   {asm_file}: エラー検出 ({output})")
         else:
             fail += 1
-            print(f"[FAIL] {asm_file}: エラーが検出されなかった (returncode={returncode}, output={output!r})")
+            print(f"[FAIL] {asm_file}: 期待したエラーが検出されなかった (returncode={returncode})")
+            print(f"  expected: {expected!r}")
+            print(f"  actual:   {output!r}")
 
     return fail
 

@@ -1,3 +1,4 @@
+; expect: asm syntax error: fail number notation '2b'
 ; 基数の接尾辞に合わない桁を書いた → エラーになるべき
 ; 2進数(接尾辞b)で使える桁は0と1のみ
 

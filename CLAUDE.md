@@ -31,10 +31,10 @@ g++ -o asm2sv.exe asm2sv.cpp
 ```
 cd test
 python test.py        # 正常系: test/asm/*.pt を全て変換し test/sv/ へ出力
-python test_err.py    # 異常系: test/asm_err/*.pt が全てエラーになることを確認
-python test_bin.py    # 実行ファイル: test/asm_bin/*.pt を test/bin/ へ出力し，test/asm_bin_err/*.pt と引数の誤りがエラーになることを確認
+python test_err.py    # 異常系: test/asm_err/*.pt が全て期待どおりのエラーになることを確認
+python test_bin.py    # 実行ファイル: test/asm_bin/*.pt を test/bin/ へ出力し，test/asm_bin_err/*.pt が期待どおりのエラーに，引数の誤りがエラーになることを確認
 ```
-期待値は `test/sv_ans/`・`test/bin_ans/`(実行ファイルと同じ形式のバイナリ) にある．
+期待値は `test/sv_ans/`・`test/bin_ans/`(実行ファイルと同じ形式のバイナリ) にある．異常系の期待するエラーメッセージは，入力ファイルの1行目に `; expect: <メッセージ>` の形で書く．メッセージは入力の行をタブ文字ごと引用することがあるため，手で書かずアセンブラの出力から作り，続くコメントに書いた意図と合っているかを確かめる．
 
 **単体実行:**
 ```

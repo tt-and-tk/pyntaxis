@@ -1,3 +1,4 @@
+; expect: asm syntax error: tab character is not supported '    ret	'
 ; 命令と行末コメントの間にタブを書いた → エラーになるべき
 ; タブはコメントを除いた部分だけを検査するが，コメントより前のタブは対象に含まれる
 

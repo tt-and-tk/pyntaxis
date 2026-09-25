@@ -1,3 +1,4 @@
+; expect: asm syntax error: empty function name in .global '.global main, x,'
 ; .globalの末尾にカンマを書いた → エラーになるべき
 ; カンマは関数名の区切りであり，最後のカンマの後に関数名がない
 

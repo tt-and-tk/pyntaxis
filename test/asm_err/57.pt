@@ -1,3 +1,4 @@
+; expect: asm syntax error: local label before main function '.L0'
 ; main関数より前に局所ラベルを定義した → エラーになるべき
 ; どの関数にも属さない局所ラベルは参照できない
 

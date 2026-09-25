@@ -1,3 +1,4 @@
+; expect: asm syntax error: fail number notation '-4h'
 ; 負の即値に基数の接尾辞を付けた → エラーになるべき
 ; 負の値は10進数表記でのみ書ける
 
