@@ -7,13 +7,13 @@
 #include <stdexcept>
 #include <vector>
 
-#include "asm2sv.hpp"
-#include "asm2sv_main.hpp"
+#include "asm2mc.hpp"
+#include "asm2mc_main.hpp"
 #include "machine_writer.hpp"
 #include "util.hpp"
 
 // このファイル内でしか使わない型
-// (pn2sv.exeへのリンク時に，コンパイラ側の同名の型(pn2asm.cppのargs_tなど)と暗黙のメンバ関数が
+// (pn2mc.exeへのリンク時に，コンパイラ側の同名の型(pn2asm.cppのargs_tなど)と暗黙のメンバ関数が
 //  1つにまとめられて食い違わないよう，無名名前空間に入れて内部リンケージにする)
 namespace {
 
@@ -33,7 +33,7 @@ typedef struct {
 }
 
 // 関数
-// (assemble_asm_to_sv以外はこのファイル内でしか使わないため，pn2sv.exeへのリンク時に
+// (assemble_asm_to_mc以外はこのファイル内でしか使わないため，pn2mc.exeへのリンク時に
 //  コンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
 static void assemble(std::ifstream &asm_file, machine_writer &writer);    // アセンブリを機械語にし，出力先の形式で書き出す
@@ -87,17 +87,17 @@ static std::string offset2imm(const long offset);                        // 相�
 const std::uint64_t IMM_FLAG = 1ULL << 32;          // immの即値使用フラグ(imm[32])
 const std::string IMM_FLAG_SV = "33'h1_0000_0000 + "; // SystemVerilog上で即値使用フラグを立てる表記（後ろに即値を足す）
 
-// メイン関数: assemble_asm_to_svをそのまま呼ぶだけ
-// pn2sv.cppに直接組み込むビルド(ASM2SV_NO_MAIN定義時)ではmain多重定義を避けるため除外する
-#ifndef ASM2SV_NO_MAIN
+// メイン関数: assemble_asm_to_mcをそのまま呼ぶだけ
+// pn2mc.cppに直接組み込むビルド(ASM2MC_NO_MAIN定義時)ではmain多重定義を避けるため除外する
+#ifndef ASM2MC_NO_MAIN
 int main(int argc, char **argv) {
-    return assemble_asm_to_sv(argc, argv);
+    return assemble_asm_to_mc(argc, argv);
 }
 #endif
 
 // アセンブリをSystemVerilog ROMまたは実行ファイルに変換する本処理
 // 処理に成功したら0，失敗したら1を返り値にする
-int assemble_asm_to_sv(int argc, char **argv) {
+int assemble_asm_to_mc(int argc, char **argv) {
     args_t args;              // コマンドライン引数
     std::ifstream asm_file;   // アセンブリファイル
     sv_writer sv;             // SystemVerilog ROMの出力先

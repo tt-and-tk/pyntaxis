@@ -13,7 +13,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASM_DIR = os.path.join(SCRIPT_DIR, "asm")
 SV_DIR = os.path.join(SCRIPT_DIR, "sv")
 SV_ANS_DIR = os.path.join(SCRIPT_DIR, "sv_ans")
-ASM2SV = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2sv.exe")
+ASM2MC = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2mc.exe")
 
 def main():
     os.makedirs(SV_DIR, exist_ok=True)
@@ -39,7 +39,7 @@ def main():
 
         # 出力は入力由来の日本語を含みうるため，Windows既定のcp932ではなくUTF-8で読む
         result = subprocess.run(
-            [ASM2SV, asm_path, "-sv", sv_path],
+            [ASM2MC, asm_path, "-sv", sv_path],
             capture_output=True,
             encoding="utf-8",
             errors="backslashreplace",
