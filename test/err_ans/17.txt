@@ -1,1 +1,0 @@
-asm syntax error: declared but not defined function 'func1'

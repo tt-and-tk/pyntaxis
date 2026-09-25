@@ -1,3 +1,4 @@
+; expect: asm syntax error: .global must start at the beginning of the line and be followed by a space '.global	main'
 ; .globalの直後がタブ → エラーになるべき
 ; .globalの直後は半角スペースで区切る(タブは非対応)
 

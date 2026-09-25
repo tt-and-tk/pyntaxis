@@ -1,3 +1,4 @@
+; expect: asm syntax error: fail argument count 'call func func' (expected 'call <function name>' or 'call <register>')
 ; call引数過多のエラーテスト（異常系）
 ; callの引数は呼び出し先関数名1つのみ
 

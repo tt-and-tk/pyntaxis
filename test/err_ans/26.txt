@@ -1,1 +1,0 @@
-asm syntax error: fail argument count 'wmr fh r16 r1' (expected 'wmr <mask> <register> <register> <immediate>')

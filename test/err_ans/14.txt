@@ -1,1 +1,0 @@
-asm syntax error: main function not found

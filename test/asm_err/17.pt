@@ -1,3 +1,4 @@
+; expect: asm syntax error: declared but not defined function 'func1'
 ; .global宣言のみで定義がない関数のエラーテスト（異常系）
 ; func1はglobalに宣言されているがラベル定義がない
 

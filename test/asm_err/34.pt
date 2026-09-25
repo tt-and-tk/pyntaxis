@@ -1,3 +1,4 @@
+; expect: asm syntax error: fail number notation 'rfoo_1'
 ; レジスタ番号が数値表記として妥当でない → エラーになるべき
 ; 末尾が数字でも，途中に数字以外を含む綴りは10進数ではない
 

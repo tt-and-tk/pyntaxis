@@ -1,1 +1,0 @@
-asm syntax error: fail argument count 'add r1 r2 r3 r4' (expected 'add <register> <register> <register>')

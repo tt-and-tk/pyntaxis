@@ -1,3 +1,4 @@
+; expect: asm syntax error: fail arguments 'call read_2' (expected 'call <function name>' or 'call <register>')
 ; .globalに宣言していない'r'始まりの関数をcallした → エラーになるべき
 ; 'r'に続く部分が数値表記ではないため，レジスタとしても解釈できない
 

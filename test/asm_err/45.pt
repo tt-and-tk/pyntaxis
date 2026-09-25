@@ -1,3 +1,4 @@
+; expect: asm syntax error: cannot take the address of 'main'
 ; 即値の位置にmainを書いた → エラーになるべき
 ; mainの番地をレジスタへ載せると，call r1のような間接呼び出しでmainを呼べてしまう
 

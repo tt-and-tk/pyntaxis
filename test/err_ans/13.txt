@@ -1,1 +1,0 @@
-asm syntax error: fail arguments 'call undefined_func' (expected 'call <function name>' or 'call <register>')

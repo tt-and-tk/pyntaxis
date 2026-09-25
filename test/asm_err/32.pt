@@ -1,3 +1,4 @@
+; expect: asm syntax error: function name conflicts with number or register notation 'r5'
 ; レジスタ表記と同じ綴りの関数名を宣言した → エラーになるべき
 ; callの呼び出し先に書くと，レジスタr5と関数名のどちらとも解釈できる
 
