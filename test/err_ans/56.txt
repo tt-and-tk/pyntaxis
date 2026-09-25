@@ -1,0 +1,1 @@
+asm syntax error: label '.L0' defined in 'main' referenced from 'func'

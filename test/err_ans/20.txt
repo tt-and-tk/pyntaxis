@@ -1,0 +1,1 @@
+asm syntax error: fail argument count 'call func func' (expected 'call <function name>' or 'call <register>')

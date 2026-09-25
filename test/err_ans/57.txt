@@ -1,0 +1,1 @@
+asm syntax error: local label before main function '.L0'

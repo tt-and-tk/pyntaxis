@@ -1,0 +1,1 @@
+asm syntax error: function name conflicts with number or register notation '-5'

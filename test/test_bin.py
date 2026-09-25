@@ -2,7 +2,8 @@
 実行ファイルの出力(-bin)を確認するテストスクリプト．
 - 正常系: test/asm_bin/*.pt を全て実行ファイルに変換して test/bin/ へ出力し，test/bin_ans/ の期待値とバイト単位で比較する．
   期待値のファイル名は，出力と同じく.ptを除いた名前(拡張子なし)とする．
-- 異常系: test/asm_bin_err/*.pt を全て実行ファイルに変換し，構文エラーになることを確認する．
+- 異常系: test/asm_bin_err/*.pt を全て実行ファイルに変換し，出力が test/bin_err_ans/ の期待値(.ptを.txtに替えた名前)と完全に一致するエラーになることを確認する．
+  構文エラーのメッセージが出たかだけでは，確かめたい誤りとは別の誤りで失敗した場合も成功とみなしてしまうため，メッセージ全体を照合する．
 - 引数の誤り: -svとの同時指定・Qosmosの実行ファイル名として使えない名前・値の無い-binなどが，引数エラーになり出力ファイルを作らないことと，ちょうど8文字の実行ファイル名は出力できることを確認する．
 """
 
@@ -13,6 +14,7 @@ import sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASM_BIN_DIR = os.path.join(SCRIPT_DIR, "asm_bin")
 ASM_BIN_ERR_DIR = os.path.join(SCRIPT_DIR, "asm_bin_err")
+BIN_ERR_ANS_DIR = os.path.join(SCRIPT_DIR, "bin_err_ans")
 BIN_DIR = os.path.join(SCRIPT_DIR, "bin")
 BIN_ANS_DIR = os.path.join(SCRIPT_DIR, "bin_ans")
 ASM2SV = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2sv.exe")
@@ -100,6 +102,8 @@ def check_error():
 
     for asm_file in list_asm(ASM_BIN_ERR_DIR):
         bin_path = os.path.join(BIN_DIR, "ERR" + asm_file[:-len(".pt")])
+        ans_name = asm_file[:-len(".pt")] + ".txt"
+        ans_path = os.path.join(BIN_ERR_ANS_DIR, ans_name)
 
         # 前回の出力が残っていると，出力しなかったことを確かめられないため消しておく
         if os.path.exists(bin_path):
@@ -107,12 +111,23 @@ def check_error():
 
         returncode, output = run([os.path.join(ASM_BIN_ERR_DIR, asm_file), "-bin", bin_path])
 
-        # 終了コード1 かつ 構文エラーのメッセージが含まれ，出力ファイルを作っていなければエラー検出成功
-        if returncode == 1 and "asm syntax error" in output and not os.path.exists(bin_path):
+        # bin_err_ans/ に期待値ファイルがなければエラー
+        if not os.path.exists(ans_path):
+            fail += 1
+            print(f"[FAIL] {asm_file}: bin_err_ans/{ans_name} が存在しません (output={output!r})")
+            continue
+
+        with open(ans_path, encoding="utf-8") as f:
+            expected = f.read().strip()
+
+        # 終了コード1 かつ 出力が期待値と一致し，出力ファイルを作っていなければエラー検出成功
+        if returncode == 1 and output == expected and not os.path.exists(bin_path):
             print(f"[OK]   {asm_file}: エラー検出 ({output})")
         else:
             fail += 1
-            print(f"[FAIL] {asm_file}: エラーが検出されなかった (returncode={returncode}, output={output!r})")
+            print(f"[FAIL] {asm_file}: 期待したエラーが検出されなかった (returncode={returncode})")
+            print(f"  expected: {expected!r}")
+            print(f"  actual:   {output!r}")
 
     return fail
 

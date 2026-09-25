@@ -1,0 +1,1 @@
+asm syntax error: arg mask or raw data fail 'fh'

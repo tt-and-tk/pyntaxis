@@ -1,0 +1,1 @@
+asm syntax error: code before .global '    add r0 r0 r0'

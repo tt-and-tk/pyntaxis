@@ -1,0 +1,1 @@
+asm syntax error: jump target must be a local label '5'

@@ -1,0 +1,1 @@
+asm syntax error: .global must start at the beginning of the line and be followed by a space '.global;x'
