@@ -62,9 +62,10 @@ def main():
             print(f"[FAIL] {asm_file}  (sv_ans/{sv_name} が存在しません)")
             continue
 
-        with open(sv_path, encoding="utf-8") as f:
+        # 改行コードの違いも検出するため，newline=""で改行コードを変換せずに読む
+        with open(sv_path, encoding="utf-8", newline="") as f:
             actual_lines = f.readlines()
-        with open(ans_path, encoding="utf-8") as f:
+        with open(ans_path, encoding="utf-8", newline="") as f:
             expected_lines = f.readlines()
 
         if actual_lines == expected_lines:
@@ -72,9 +73,10 @@ def main():
             print(f"[PASS] {asm_file}")
         else:
             compare_fail.append(asm_file)
+            # 改行コードだけの違いも差分に見えるよう，CRを\rと表記する(表示時のsplitlines()ではCRLFごと取り除かれるため)
             diff = difflib.unified_diff(
-                expected_lines,
-                actual_lines,
+                [line.replace("\r", "\\r") for line in expected_lines],
+                [line.replace("\r", "\\r") for line in actual_lines],
                 fromfile=f"expected (sv_ans/{sv_name})",
                 tofile=f"actual   (sv/{sv_name})",
             )
