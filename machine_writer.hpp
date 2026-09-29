@@ -111,18 +111,20 @@ private:
 
 // Qosmosの実行ファイルの出力先
 // 実行ファイルはヘッダを持たず，命令を先頭から1命令8バイトずつ並べたもの
-// シェルはこれをメモリの後半(0x8000番地からの32KB．PC 0x4000からに対応する)の先頭へ書き写し，先頭の命令をCALLで呼び出す
+// シェルはこれを，メモリの後半(0x8000番地から．PC 0x4000からに対応する)のうち末尾のワードを除いた範囲の先頭へ書き写し，
+// 先頭の命令をCALLで呼び出す(末尾のワードには，シェルがシステムコールの入口の番地を書き込む)
 class bin_writer : public machine_writer {
 public:
     static constexpr std::size_t BASE_PC = 0x4000;              // メモリの後半の先頭の命令のPC
-    static constexpr std::size_t CODE_AREA_SIZE = 32 * 1024;    // メモリの後半の大きさ(バイト．命令列を置くコード領域の大きさの上限)
+    static constexpr std::size_t RAM_HALF_SIZE = 32 * 1024;     // メモリの後半の大きさ(バイト)
+    static constexpr std::size_t SYSCALL_ENTRY_SIZE = 4;        // メモリの後半の末尾にある，システムコールの入口の番地を置くワードの大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
 
     // シェルはメモリの後半の先頭から実行ファイルを置く
     std::size_t base_pc() const override { return this->BASE_PC; }
 
-    // メモリの後半に収まる命令数
-    std::size_t max_instructions() const override { return this->CODE_AREA_SIZE / this->INSTRUCTION_SIZE; }
+    // メモリの後半のうち，末尾のシステムコールの入口と重ならずに収まる命令数
+    std::size_t max_instructions() const override { return (this->RAM_HALF_SIZE - this->SYSCALL_ENTRY_SIZE) / this->INSTRUCTION_SIZE; }
 
     // シェルがCALLで呼び出すため，mainのretはそのままシェルへ戻る
     bool main_ret_halts() const override { return false; }
