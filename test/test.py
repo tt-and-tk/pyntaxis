@@ -1,5 +1,6 @@
 """
 test/asm/*.pt を全て変換して test/sv/ へ出力するテストスクリプト。
+アセンブラをビルドしてから変換する。
 変換に成功した件数と失敗した件数を報告する。
 sv_ans/ に期待値ファイルがなければ FAIL とする。
 """
@@ -9,13 +10,18 @@ import os
 import subprocess
 import sys
 
+from asm_build import ASM2MC, build_assembler
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASM_DIR = os.path.join(SCRIPT_DIR, "asm")
 SV_DIR = os.path.join(SCRIPT_DIR, "sv")
 SV_ANS_DIR = os.path.join(SCRIPT_DIR, "sv_ans")
-ASM2MC = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2mc.exe")
 
 def main():
+    # まずアセンブラをビルドする
+    if not build_assembler():
+        sys.exit(1)
+
     os.makedirs(SV_DIR, exist_ok=True)
 
     asm_files = sorted(

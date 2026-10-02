@@ -6,3 +6,4 @@ test/bin/
 .env
 .mcp.json
 .worktrees/
+__pycache__/
