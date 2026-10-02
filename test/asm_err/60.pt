@@ -1,0 +1,8 @@
+; expect: asm syntax error: label must start at the beginning of the line '  main:'
+; 最初の関数ラベル(main)をインデントした → エラーになるべき
+; ラベルは行頭から書く
+
+.global main
+
+  main:
+    ret
