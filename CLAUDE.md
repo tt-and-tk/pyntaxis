@@ -24,10 +24,11 @@ PYNQ-Z2 (Zynq-7000) 上に実装する自作CPUと，それを動かすソフト
 
 **ビルド:**
 ```
-g++ -o asm2mc.exe asm2mc.cpp
+g++ -Wall -Wextra -std=c++17 -o asm2mc.exe asm2mc.cpp
 ```
 
 **テスト(`test/` ディレクトリで実行):**
+各テストスクリプトは，最初に`test/asm_build.py`(共通のビルド処理)で上記と同じビルドを行ってからテストするため，事前のビルドは不要．
 ```
 cd test
 python test.py        # 正常系: test/asm/*.pt を全て変換し test/sv/ へ出力

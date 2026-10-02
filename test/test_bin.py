@@ -1,5 +1,5 @@
 """
-実行ファイルの出力(-bin)を確認するテストスクリプト．
+実行ファイルの出力(-bin)を確認するテストスクリプト．アセンブラをビルドしてから確認する．
 - 正常系: test/asm_bin/*.pt を全て実行ファイルに変換して test/bin/ へ出力し，test/bin_ans/ の期待値とバイト単位で比較する．
   期待値のファイル名は，出力と同じく.ptを除いた名前(拡張子なし)とする．
 - 異常系: test/asm_bin_err/*.pt を全て実行ファイルに変換し，出力が各ファイルの1行目に「; expect: <期待するメッセージ>」の形で書いたメッセージと完全に一致するエラーになることを確認する．
@@ -11,12 +11,13 @@ import os
 import subprocess
 import sys
 
+from asm_build import ASM2MC, build_assembler
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASM_BIN_DIR = os.path.join(SCRIPT_DIR, "asm_bin")
 ASM_BIN_ERR_DIR = os.path.join(SCRIPT_DIR, "asm_bin_err")
 BIN_DIR = os.path.join(SCRIPT_DIR, "bin")
 BIN_ANS_DIR = os.path.join(SCRIPT_DIR, "bin_ans")
-ASM2MC = os.path.join(os.path.dirname(SCRIPT_DIR), "asm2mc.exe")
 
 INSTRUCTION_SIZE = 8  # 実行ファイルでの1命令のバイト数
 EXPECT_PREFIX = "; expect: "  # 異常系の期待するエラーメッセージを書く1行目の接頭辞
@@ -186,6 +187,10 @@ def check_args():
 
 
 def main():
+    # まずアセンブラをビルドする
+    if not build_assembler():
+        sys.exit(1)
+
     os.makedirs(BIN_DIR, exist_ok=True)
 
     fail = check_normal() + check_error() + check_args()
