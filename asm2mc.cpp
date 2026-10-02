@@ -412,6 +412,10 @@ void assemble_body(
         // ラベル宣言なら
         std::size_t colon_index = code.find_first_of(':');
         if (colon_index != std::string::npos) {
+            // インデントしたラベルなら，空白がラベル名に残り別名の未定義エラーになるため，原因が分かるエラーにする
+            if (code[0] == ' ') {
+                throw "asm syntax error: label must start at the beginning of the line '" + line + "'";
+            }
             std::string label_name = code.substr(0, colon_index);
 
             // 局所ラベル（先頭が '.'）なら，関数ラベルとは別の表に位置と定義した関数を記録する
