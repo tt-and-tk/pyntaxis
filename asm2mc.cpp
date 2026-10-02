@@ -413,6 +413,7 @@ void assemble_body(
         std::size_t colon_index = code.find_first_of(':');
         if (colon_index != std::string::npos) {
             // 空白・タブでインデントしたラベルなら，それらがラベル名に残り別名の未定義エラーになるため，原因が分かるエラーにする
+            // インデントを取り除いて受け付けないのは，.global行と同じく宣言は行頭・命令はインデントという書き分けに揃えるため
             if (code[0] == ' ' || code[0] == '\t') {
                 throw "asm syntax error: label must start at the beginning of the line '" + line + "'";
             }
