@@ -1,0 +1,9 @@
+; expect: asm syntax error: expected immediate but got 'r3'
+; 即値を書くべき位置にレジスタを書いた → 即値が必要であることが分かるエラーになるべき
+; rmrの第4引数は即値であり，レジスタは受け付けない
+
+.global main
+
+main:
+    rmr fh r16 r2 r3
+    ret
