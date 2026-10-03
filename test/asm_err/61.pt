@@ -1,0 +1,11 @@
+; expect: asm syntax error: label must start at the beginning of the line '	func:'
+; 関数ラベルをタブでインデントした → エラーになるべき
+; ラベルは行頭から書く
+
+.global main, func
+
+main:
+    call func
+    ret
+	func:
+    ret

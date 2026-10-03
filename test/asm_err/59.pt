@@ -1,0 +1,10 @@
+; expect: asm syntax error: label must start at the beginning of the line '  .L0:'
+; 局所ラベルをインデントした → エラーになるべき
+; ラベルは行頭から書く
+
+.global main
+
+main:
+  .L0:
+    jmp .L0
+    ret
