@@ -822,8 +822,10 @@ operand_t convert_arg(
     }
     else {
         // 引数タイプがマスクまたは生の値ではないなら
+        // 局所ラベルと関数名は上で処理済みのため，ここに来るのはレジスタの位置だけ
+        // 書き方の誤りではなく位置の誤りと分かるよう，期待する種類と書かれた引数を示す
         if (arg_type != arg_t::MASK && arg_type != arg_t::RAW_DATA) {
-            throw "asm syntax error: arg mask or raw data fail '" + arg + "'";
+            throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
         }
     }
 
