@@ -812,7 +812,8 @@ operand_t convert_arg(
     }
 
     // 引数がレジスタなら
-    if (converted_arg[0] == 'r') {
+    // 'r'で始まる関数名はレジスタとして扱わず，関数名を書いた他の位置と同じ検証にかける
+    if (converted_arg[0] == 'r' && functions.find(converted_arg) == functions.end()) {
         // 引数タイプが違うなら
         if (arg_type != arg_t::REGISTER) {
             throw "asm syntax error: arg register address fail '" + arg + "'";
@@ -822,7 +823,7 @@ operand_t convert_arg(
     }
     else {
         // 引数タイプがマスクまたは生の値ではないなら
-        // 局所ラベルと関数名は上で処理済みのため，ここに来るのはレジスタの位置だけ
+        // 局所ラベルと，関数名として解決できる引数は上で処理済みのため，ここに来るのはレジスタの位置だけ
         // 書き方の誤りではなく位置の誤りと分かるよう，期待する種類と書かれた引数を示す
         if (arg_type != arg_t::MASK && arg_type != arg_t::RAW_DATA) {
             throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
