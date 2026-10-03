@@ -811,8 +811,7 @@ operand_t convert_arg(
         return {"", 0, ref_t::FUNCTION, converted_arg};
     }
 
-    // 引数がレジスタなら
-    // 'r'で始まる関数名はレジスタとして扱わず，関数名を書いた他の位置と同じ検証にかける
+    // 引数がレジスタなら('r'で始まっても関数名はレジスタとして扱わず，関数名を書いた他の位置と同じ検証にかける)
     if (converted_arg[0] == 'r' && functions.find(converted_arg) == functions.end()) {
         // 引数タイプが違うなら
         if (arg_type != arg_t::REGISTER) {
