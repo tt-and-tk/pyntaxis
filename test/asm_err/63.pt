@@ -1,0 +1,9 @@
+; expect: asm syntax error: expected mask but got 'r1'
+; マスクを書くべき位置にレジスタを書いた → マスクが必要であることが分かるエラーになるべき
+; movの第1引数はマスクであり，レジスタは受け付けない
+
+.global main
+
+main:
+    mov r1 r1 r2
+    ret

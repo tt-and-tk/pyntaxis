@@ -814,8 +814,9 @@ operand_t convert_arg(
     // 引数がレジスタなら('r'で始まっても関数名はレジスタとして扱わず，'r'以外で始まる関数名と同じくelse側で検証する)
     if (converted_arg[0] == 'r' && functions.find(converted_arg) == functions.end()) {
         // 引数タイプが違うなら
+        // マスク・即値を書くべき位置に'r'で始まる引数(レジスタとみなす)を書いたため，期待する引数の種類と書かれた引数を示す
         if (arg_type != arg_t::REGISTER) {
-            throw "asm syntax error: arg register address fail '" + arg + "'";
+            throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
         }
 
         converted_arg = arg.substr(1);
