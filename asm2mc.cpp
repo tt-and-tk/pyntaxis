@@ -811,7 +811,7 @@ operand_t convert_arg(
         return {"", 0, ref_t::FUNCTION, converted_arg};
     }
 
-    // 引数がレジスタなら('r'で始まっても関数名はレジスタとして扱わず，関数名を書いた他の位置と同じ検証にかける)
+    // 引数がレジスタなら('r'で始まっても関数名はレジスタとして扱わず，'r'以外で始まる関数名と同じくelse側で検証する)
     if (converted_arg[0] == 'r' && functions.find(converted_arg) == functions.end()) {
         // 引数タイプが違うなら
         if (arg_type != arg_t::REGISTER) {
@@ -820,9 +820,10 @@ operand_t convert_arg(
 
         converted_arg = arg.substr(1);
     }
+    // 引数がレジスタではない(数値や関数名などを書いた)なら
     else {
         // 引数タイプがマスクまたは生の値ではないなら
-        // 書き方の誤りではなく位置の誤りと分かるよう，期待する種類と書かれた引数を示す
+        // レジスタを書くべき位置にレジスタ以外を書いたため，期待する引数の種類と書かれた引数を示す
         if (arg_type != arg_t::MASK && arg_type != arg_t::RAW_DATA) {
             throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
         }
