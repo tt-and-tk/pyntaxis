@@ -1,4 +1,4 @@
-; expect: asm syntax error: arg mask or raw data fail 'fh'
+; expect: asm syntax error: expected register but got 'fh'
 ; レジスタを書くべき位置にマスクを書いた → エラーになるべき
 ; rmrの第2引数はレジスタであり，マスクやイミディエイトデータは受け付けない
 

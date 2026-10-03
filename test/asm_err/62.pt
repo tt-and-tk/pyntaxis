@@ -1,0 +1,12 @@
+; expect: asm syntax error: expected register but got 'run'
+; レジスタの位置に'r'で始まる関数名を書いた → 他の関数名と同じエラーになるべき
+; 頭文字が'r'でも，関数名はレジスタ番号の書き誤りとしては扱わない
+
+.global main, run
+
+main:
+    add run r2 r3
+    ret
+
+run:
+    ret
