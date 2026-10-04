@@ -1,0 +1,9 @@
+; expect: asm syntax error: undeclared function 'read_buf'
+; 即値の位置に'r'で始まる未宣言の名前を書いた → 宣言漏れが分かるエラーになるべき
+; 'r'で始まってもレジスタ表記でない綴りは，レジスタではなく名前として扱う
+
+.global main
+
+main:
+    mov fh r0 r1 read_buf
+    ret

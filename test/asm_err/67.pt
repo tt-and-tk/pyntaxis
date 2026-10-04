@@ -1,0 +1,9 @@
+; expect: asm syntax error: expected mask but got 'read_buf'
+; マスクの位置に'r'で始まる未宣言の名前を書いた → マスクが必要であることが分かるエラーになるべき
+; マスクの位置には名前を書けない
+
+.global main
+
+main:
+    mov read_buf r0 r1 42
+    ret

@@ -1,0 +1,9 @@
+; expect: asm syntax error: undeclared function 'buf'
+; 即値の位置に'r'以外で始まる未宣言の名前を書いた → 宣言漏れが分かるエラーになるべき
+; 数字で始まらない綴りは，数値の書き誤りではなく名前として扱う
+
+.global main
+
+main:
+    mov fh r0 r1 buf
+    ret

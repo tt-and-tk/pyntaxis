@@ -1,0 +1,10 @@
+; expect: asm syntax error: fail number notation '.L0'
+; 即値の位置に局所ラベルを書いた → 未宣言の関数とは案内しないエラーになるべき
+; '.'で始まる綴りは局所ラベルであり，関数名にはできないため名前とはみなさない
+
+.global main
+
+main:
+.L0:
+    mov fh r0 r1 .L0
+    ret
