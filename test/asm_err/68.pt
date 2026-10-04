@@ -1,0 +1,9 @@
+; expect: asm syntax error: expected mask but got 'buf'
+; マスクの位置に'r'以外で始まる未宣言の名前を書いた → マスクが必要であることが分かるエラーになるべき
+; 頭文字によらず，'r'で始まる名前と同じエラーになる
+
+.global main
+
+main:
+    mov buf r0 r1 42
+    ret

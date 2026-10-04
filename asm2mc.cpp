@@ -74,6 +74,7 @@ static bool is_digits_of_base(const std::string &digits, const int base); // 全
 static bool is_number_notation(const std::string &word);                 // 数値表記(基数接尾辞を含む)として妥当か
 static bool is_negative_notation(const std::string &word);               // 負の数値表記('-'+10進)として妥当か
 static bool is_register_notation(const std::string &word);               // レジスタ表記('r'+数値表記)として妥当か
+static bool is_name_notation(const std::string &word);                   // 名前(関数名)の綴りとして妥当か
 static void throw_if_tab(const std::string &line);                       // タブ文字があればエラーにする
 static bool is_executable_name(const std::string &name);                 // Qosmosの実行ファイル名として使えるか
 static void resolve_refs(                                                // 関数・局所ラベルの参照をPC/相対オフセットに解決する
@@ -753,6 +754,14 @@ bool is_register_notation(const std::string &word) {
     return !word.empty() && word[0] == 'r' && is_number_notation(word.substr(1));
 }
 
+// 名前(関数名)の綴りとして妥当かを返す(数値・レジスタの表記ではなく，数字・'-'・'.'以外で始まる形)
+// 数字・'-'で始まる綴りは数値の書き誤り，'.'で始まる綴りは局所ラベルとして，名前とはみなさない
+bool is_name_notation(const std::string &word) {
+    return !word.empty()
+        && !('0' <= word[0] && word[0] <= '9') && word[0] != '-' && word[0] != '.'
+        && !is_number_notation(word) && !is_register_notation(word);
+}
+
 // 引数タイプごとのビット数を返す
 // 数値表記を書ける引数のみが対象(関数名・局所ラベルは表を引いて解決するため数値の桁数を持たない)
 std::string get_bit_length_of_command(const arg_t arg_type) {
@@ -795,7 +804,7 @@ operand_t convert_arg(
 
     // 引数が関数名なら (callの呼び出し先，または即値の位置に書いた関数の先頭PC)
     // 関数名として解決するのは関数名・即値の位置だけ．レジスタ・マスクの位置では解決せず，
-    // 通常の引数として検証するため，関数名は後続の種類・数値表記の検証でエラーになる
+    // 通常の引数として検証するため，関数名は後続の種類の検証でエラーになる
     if (
         (arg_type == arg_t::FUNC_NAME || arg_type == arg_t::RAW_DATA)
         && functions.find(converted_arg) != functions.end()
@@ -811,10 +820,19 @@ operand_t convert_arg(
         return {"", 0, ref_t::FUNCTION, converted_arg};
     }
 
+    // マスク・即値の位置に名前を書いたなら
+    // 'r'で始まる名前をレジスタとみなさないよう，レジスタの判定より前に検出する
+    if ((arg_type == arg_t::MASK || arg_type == arg_t::RAW_DATA) && is_name_notation(converted_arg)) {
+        // 即値の位置の宣言済みの関数名は上で解決したため，残るのは未宣言の関数名
+        if (arg_type == arg_t::RAW_DATA) throw "asm syntax error: undeclared function '" + arg + "'";
+        // マスクの位置には名前を書けないため，期待する引数の種類と書かれた引数を示す
+        throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
+    }
+
     // 引数がレジスタなら('r'で始まっても関数名はレジスタとして扱わず，'r'以外で始まる関数名と同じくelse側で検証する)
     if (converted_arg[0] == 'r' && functions.find(converted_arg) == functions.end()) {
         // 引数タイプが違うなら
-        // マスク・即値を書くべき位置に'r'で始まる引数(レジスタとみなす)を書いたため，期待する引数の種類と書かれた引数を示す
+        // マスク・即値を書くべき位置にレジスタを書いたため，期待する引数の種類と書かれた引数を示す
         if (arg_type != arg_t::REGISTER) {
             throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
         }
