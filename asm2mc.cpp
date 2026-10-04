@@ -74,7 +74,7 @@ static bool is_digits_of_base(const std::string &digits, const int base); // 全
 static bool is_number_notation(const std::string &word);                 // 数値表記(基数接尾辞を含む)として妥当か
 static bool is_negative_notation(const std::string &word);               // 負の数値表記('-'+10進)として妥当か
 static bool is_register_notation(const std::string &word);               // レジスタ表記('r'+数値表記)として妥当か
-static bool is_name_notation(const std::string &word);                   // 名前(関数名)の綴りとして妥当か
+static bool is_name_notation(const std::string &word);                   // 名前を書いたとみなす綴りか
 static void throw_if_tab(const std::string &line);                       // タブ文字があればエラーにする
 static bool is_executable_name(const std::string &name);                 // Qosmosの実行ファイル名として使えるか
 static void resolve_refs(                                                // 関数・局所ラベルの参照をPC/相対オフセットに解決する
@@ -754,8 +754,8 @@ bool is_register_notation(const std::string &word) {
     return !word.empty() && word[0] == 'r' && is_number_notation(word.substr(1));
 }
 
-// 名前(関数名)の綴りとして妥当かを返す(数値・レジスタの表記ではなく，数字・'-'・'.'以外で始まる形)
-// 数字・'-'で始まる綴りは数値の書き誤り，'.'で始まる綴りは局所ラベルとして，名前とはみなさない
+// 名前を書いたとみなす綴りかを返す(数値・レジスタの表記ではなく，数字・'-'・'.'以外で始まる形)
+// 数字・'-'で始まる綴りは数値の書き誤り，'.'で始まる綴りは局所ラベルとみなす(.globalで宣言できる関数名の規則とは別)
 bool is_name_notation(const std::string &word) {
     return !word.empty()
         && !('0' <= word[0] && word[0] <= '9') && word[0] != '-' && word[0] != '.'
