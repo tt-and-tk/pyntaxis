@@ -3,7 +3,8 @@
 
 module rom_sv(
     input logic clk,
-    rom_read_if.slave rom_read
+    rom_read_if.slave rom_read,
+    rom_read_if.slave rom_read2
     );
     import machine_p::*;
 
@@ -40,6 +41,16 @@ module rom_sv(
             rom_read.machine <= machines[rom_read.pc];
         end else begin
             rom_read.machine <= nop();
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        rom_read2.valid <= (rom_read2.pc < ROM_SIZE);
+
+        if (rom_read2.pc < ROM_SIZE) begin
+            rom_read2.machine <= machines[rom_read2.pc];
+        end else begin
+            rom_read2.machine <= nop();
         end
     end
 
