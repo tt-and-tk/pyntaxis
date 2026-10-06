@@ -50,7 +50,8 @@ public:
                         "\n"
                         "module rom_sv(\n"
                         "    input logic clk,\n"
-                        "    rom_read_if.slave rom_read\n"
+                        "    rom_read_if.slave rom_read1,\n"
+                        "    rom_read_if.slave rom_read2\n"
                         "    );\n"
                         "    import machine_p::*;\n"
                         "\n";
@@ -76,25 +77,33 @@ public:
         this->output += (this->rest > 0) ? "),\n" : ")\n";
     }
 
-    // 命令の配列を閉じ，PCに対応する命令を返す処理を出力する
+    // 命令の配列を閉じ，読み出しポートごとにPCに対応する命令を返す処理を出力する
     void write_footer() override {
         this->output += "    };\n"
-                        "\n"
-                        "    always_ff @(posedge clk) begin\n"
-                        "        rom_read.valid <= (rom_read.pc < ROM_SIZE);\n"
-                        "\n"
-                        "        if (rom_read.pc < ROM_SIZE) begin\n"
-                        "            rom_read.machine <= machines[rom_read.pc];\n"
-                        "        end else begin\n"
-                        "            rom_read.machine <= nop();\n"
-                        "        end\n"
-                        "    end\n"
-                        "\n"
+                        "\n";
+        this->write_read_port("rom_read1");
+        this->output += "\n";
+        this->write_read_port("rom_read2");
+        this->output += "\n"
                         "endmodule\n";
     }
 
 private:
     std::size_t rest = 0;    // まだ出力していない命令の数
+
+    // 読み出しポート一つ分の，PCに対応する命令を返す処理を出力する
+    // ポートごとにalways_ffを分けるのは，同じ配列をブロックRAMの2ポートとして推論させるVivadoの記述例に合わせるため
+    void write_read_port(const std::string &port) {
+        this->output += "    always_ff @(posedge clk) begin\n"
+                        "        " + port + ".valid <= (" + port + ".pc < ROM_SIZE);\n"
+                        "\n"
+                        "        if (" + port + ".pc < ROM_SIZE) begin\n"
+                        "            " + port + ".machine <= machines[" + port + ".pc];\n"
+                        "        end else begin\n"
+                        "            " + port + ".machine <= nop();\n"
+                        "        end\n"
+                        "    end\n";
+    }
 
     // ニーモニックをmachine.svh側の関数名に変換する
     // SystemVerilog予約語と衝突するand/or/xor/not/nandは末尾に_を付ける
