@@ -50,7 +50,7 @@ public:
                         "\n"
                         "module rom_sv(\n"
                         "    input logic clk,\n"
-                        "    rom_read_if.slave rom_read,\n"
+                        "    rom_read_if.slave rom_read1,\n"
                         "    rom_read_if.slave rom_read2\n"
                         "    );\n"
                         "    import machine_p::*;\n"
@@ -81,7 +81,7 @@ public:
     void write_footer() override {
         this->output += "    };\n"
                         "\n";
-        this->write_read_port("rom_read");
+        this->write_read_port("rom_read1");
         this->output += "\n";
         this->write_read_port("rom_read2");
         this->output += "\n"
