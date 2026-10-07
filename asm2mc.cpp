@@ -374,7 +374,7 @@ void get_function_names(
         if (function_name[0] == '.') {
             throw "asm syntax error: function name conflicts with local label notation '" + function_name + "'";
         }
-        // 数値・レジスタの表記と，数値の書き誤りとみなす数字・'-'始まりの綴りは，数値・レジスタと区別できない
+        // 数値・レジスタの表記と，数値の書き誤りとみなす数字・'-'始まりの綴り
         if (!is_name_notation(function_name)) {
             throw "asm syntax error: function name conflicts with number or register notation '" + function_name + "'";
         }
