@@ -1,0 +1,11 @@
+; expect: asm syntax error: function name conflicts with number or register notation '-x'
+; '-'で始まる数値でない綴りの関数名を宣言した → エラーになるべき
+; 即値の位置に書くと数値の書き誤りとみなすため，関数名として参照できない
+
+.global main, -x
+
+main:
+    ret
+
+-x:
+    ret
