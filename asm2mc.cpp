@@ -374,9 +374,16 @@ void get_function_names(
         if (function_name[0] == '.') {
             throw "asm syntax error: function name conflicts with local label notation '" + function_name + "'";
         }
-        // 数値・レジスタの表記と，数値の書き誤りとみなす数字・'-'始まりの綴り
-        if (!is_name_notation(function_name)) {
+        // 数値・レジスタの表記はどちらとも解釈できる
+        if (
+            is_number_notation(function_name) || is_negative_notation(function_name)
+            || is_register_notation(function_name)
+        ) {
             throw "asm syntax error: function name conflicts with number or register notation '" + function_name + "'";
+        }
+        // 残る数字・'-'始まりの綴りは数値の書き誤りとみなす
+        if (!is_name_notation(function_name)) {
+            throw "asm syntax error: function name cannot start with digit or '-' '" + function_name + "'";
         }
 
         // すでにその名前の関数が登録されていれば

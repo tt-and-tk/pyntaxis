@@ -1,4 +1,4 @@
-; expect: asm syntax error: function name conflicts with number or register notation '2x'
+; expect: asm syntax error: function name cannot start with digit or '-' '2x'
 ; 数字で始まる数値でない綴りの関数名を宣言した → エラーになるべき
 ; 即値の位置に書くと数値の書き誤りとみなすため，関数名として参照できない
 
