@@ -26,7 +26,7 @@ typedef struct {
 
 // 局所ラベルの定義情報
 typedef struct {
-    std::size_t index;            // ラベルの位置（直後の命令のindex）
+    std::size_t index;            // ラベルの位置(直後の命令のindex)
     std::string function;         // ラベルを定義した関数名
 } local_label_t;
 
@@ -83,10 +83,10 @@ static void resolve_refs(                                                // 関�
     const std::map<std::string, local_label_t> &local_labels,
     const std::size_t base_pc
 );
-static std::string offset2imm(const long offset);                        // 相対オフセットをイミディエイト表記にする（負は32bit2の補数）
+static std::string offset2imm(const long offset);                        // 相対オフセットをイミディエイト表記にする(負は32bit2の補数)
 
 const std::uint64_t IMM_FLAG = 1ULL << 32;          // immの即値使用フラグ(imm[32])
-const std::string IMM_FLAG_SV = "33'h1_0000_0000 + "; // SystemVerilog上で即値使用フラグを立てる表記（後ろに即値を足す）
+const std::string IMM_FLAG_SV = "33'h1_0000_0000 + "; // SystemVerilog上で即値使用フラグを立てる表記(後ろに即値を足す)
 
 // メイン関数: assemble_asm_to_mcをそのまま呼ぶだけ
 // pn2mc.cppに直接組み込むビルド(ASM2MC_NO_MAIN定義時)ではmain多重定義を避けるため除外する
@@ -210,12 +210,12 @@ void get_args(int argc, char **argv, args_t &args) {
         }
     }
 
-    // アセンブリファイル名が .pt で終わっているか（短い名前での範囲外アクセスを防ぐ）
+    // アセンブリファイル名が .pt で終わっているか(短い名前での範囲外アクセスを防ぐ)
     const bool asm_name_ok =
         args.asm_file_name.length() >= 3
         && args.asm_file_name.substr(args.asm_file_name.length() - 3) == ".pt";
 
-    // -sv と -bin を両方指定したか（-sv の自動導出より前に，書かれた指定だけで判定する）
+    // -sv と -bin を両方指定したか(-sv の自動導出より前に，書かれた指定だけで判定する)
     const bool both_output = output_bin && !args.sv_file_name.empty();
 
     // SystemVerilogを出力するのに出力ファイル名が指定されていないなら，アセンブリ名の拡張子を .sv にして使う
@@ -231,7 +231,7 @@ void get_args(int argc, char **argv, args_t &args) {
         );
     }
 
-    // 出力ファイル名が .sv で終わっているか（実行ファイルを出力する場合は使わないため問わない）
+    // 出力ファイル名が .sv で終わっているか(実行ファイルを出力する場合は使わないため問わない)
     const bool sv_name_ok =
         output_bin
         || (
@@ -267,7 +267,7 @@ void get_args(int argc, char **argv, args_t &args) {
 void assemble(std::ifstream &asm_file, machine_writer &writer) {
     std::map<std::string, std::size_t> functions;     // 関数とその先頭index
     std::map<std::string, local_label_t> local_labels; // 局所ラベルとその位置・定義した関数
-    std::vector<instruction_t> instructions;          // アセンブルした命令一覧（1要素=1命令）
+    std::vector<instruction_t> instructions;          // アセンブルした命令一覧(1要素=1命令)
 
     // .global 行を取得し，宣言された関数名を読み込む
     std::string global_line = read_global_line(asm_file);
@@ -278,7 +278,7 @@ void assemble(std::ifstream &asm_file, machine_writer &writer) {
         throw std::string("asm syntax error: main function not found");
     }
 
-    // 本体をアセンブルする（functions/local_labels の位置確定 + instructions 生成）
+    // 本体をアセンブルする(functions/local_labels の位置確定 + instructions 生成)
     assemble_body(asm_file, writer, functions, local_labels, instructions);
 
     // .global で宣言された関数がすべて定義されているか確認する
@@ -289,7 +289,7 @@ void assemble(std::ifstream &asm_file, machine_writer &writer) {
         }
     }
 
-    // 関数・局所ラベルの参照を解決する（関数・jmpはPC，F系は相対オフセット）
+    // 関数・局所ラベルの参照を解決する(関数・jmpはPC，F系は相対オフセット)
     resolve_refs(instructions, functions, local_labels, writer.base_pc());
 
     // 命令列を出力先の形式で書き出す
@@ -358,7 +358,7 @@ void get_function_names(
         const std::size_t comma_index = names.find(',', begin);
         std::string function_name = ltrim(names.substr(begin, comma_index - begin));
 
-        // 末尾の空白を除去（カンマの前に空白がある場合に備える）
+        // 末尾の空白を除去(カンマの前に空白がある場合に備える)
         while (!function_name.empty() && function_name.back() == ' ') {
             function_name.pop_back();
         }
@@ -428,18 +428,18 @@ void assemble_body(
             }
             std::string label_name = code.substr(0, colon_index);
 
-            // 局所ラベル（先頭が '.'）なら，関数ラベルとは別の表に位置と定義した関数を記録する
+            // 局所ラベル(先頭が '.')なら，関数ラベルとは別の表に位置と定義した関数を記録する
             // 命令は生成せず，.global 照合・main先頭チェック・ret追跡の対象外
             if (!label_name.empty() && label_name[0] == '.') {
-                // main関数の宣言前にある（どの関数にも属さず，参照できない）
+                // main関数の宣言前にある(どの関数にも属さず，参照できない)
                 if (current_function.empty()) {
                     throw "asm syntax error: local label before main function '" + label_name + "'";
                 }
-                // すでに定義済みなら（ラベルはプログラム全体で一意）
+                // すでに定義済みなら(ラベルはプログラム全体で一意)
                 if (local_labels.find(label_name) != local_labels.end()) {
                     throw "asm syntax error: label overlapping definition '" + label_name + "'";
                 }
-                // ラベル位置（直後の命令のindex）と定義した関数を記録する
+                // ラベル位置(直後の命令のindex)と定義した関数を記録する
                 // 所属をindexで判定しないのは，関数末尾のラベルのindexが次の関数の先頭と一致するため
                 local_labels[label_name] = {instructions.size(), current_function};
                 continue;
@@ -805,7 +805,7 @@ operand_t convert_arg(
             throw "asm syntax error: jump target must be a local label '" + arg + "'";
         }
 
-        // jmpは絶対PC，F系は相対オフセットに解決する（命令名で区別）
+        // jmpは絶対PC，F系は相対オフセットに解決する(命令名で区別)
         const ref_t ref = (command == "jmp") ? ref_t::LABEL_ABS : ref_t::LABEL_REL;
         return {"", 0, ref, converted_arg};
     }
@@ -856,7 +856,7 @@ operand_t convert_arg(
         }
     }
 
-    // 加工後に空文字列なら不正な引数（例: 番号のない "r"）
+    // 加工後に空文字列なら不正な引数(例: 番号のない "r")
     if (converted_arg.empty()) {
         throw "asm syntax error: fail arg '" + arg + "'";
     }
@@ -941,7 +941,7 @@ bool is_executable_name(const std::string &name) {
 
 // 関数・局所ラベルの参照を解決し，引数のSystemVerilog上の表記と値を埋める
 // 各命令のインデックスがそのまま先頭の命令からの位置になるため，ループのindexを使って計算できる
-// 関数・jmp（絶対）は「先頭の命令のPC + 参照先のindex」，F系（相対）は「ラベルのindex − 自命令のindex」に解決する
+// 関数・jmp(絶対)は「先頭の命令のPC + 参照先のindex」，F系(相対)は「ラベルのindex − 自命令のindex」に解決する
 void resolve_refs(
     std::vector<instruction_t> &instructions,
     const std::map<std::string, std::size_t> &functions,
@@ -950,7 +950,7 @@ void resolve_refs(
 ) {
     for (std::size_t index = 0; index < instructions.size(); index++) {
         for (operand_t &operand : instructions[index].operands) {
-            // 参照を持たない引数は何もしない（大多数はここで抜ける）
+            // 参照を持たない引数は何もしない(大多数はここで抜ける)
             if (operand.ref == ref_t::NONE) continue;
 
             std::string imm;              // 解決した即値のSystemVerilog上の表記
@@ -978,13 +978,13 @@ void resolve_refs(
                 imm = std::to_string(pc);
                 imm_value = static_cast<std::uint32_t>(pc);
             }
-            // jmp（絶対）なら，ラベルのPCにする
+            // jmp(絶対)なら，ラベルのPCにする
             else if (operand.ref == ref_t::LABEL_ABS) {
                 const std::size_t pc = base_pc + label->index;
                 imm = std::to_string(pc);
                 imm_value = static_cast<std::uint32_t>(pc);
             }
-            // F系（相対）なら，「ラベルのindex − 自命令のindex」にする
+            // F系(相対)なら，「ラベルのindex − 自命令のindex」にする
             else if (operand.ref == ref_t::LABEL_REL) {
                 const long offset = static_cast<long>(label->index) - static_cast<long>(index);
                 imm = offset2imm(offset);
@@ -1003,12 +1003,12 @@ void resolve_refs(
 }
 
 // 相対オフセットをイミディエイト表記にする
-// 負のオフセットは32bit2の補数のhexにする（33bit目の即値使用フラグを落とさないため）
+// 負のオフセットは32bit2の補数のhexにする(33bit目の即値使用フラグを落とさないため)
 std::string offset2imm(const long offset) {
     // 0以上ならそのまま10進で出力する
     if (offset >= 0) return std::to_string(offset);
 
-    // 負なら32bit2の補数（例: -4 → 32'hfffffffc）にする
+    // 負なら32bit2の補数(例: -4 → 32'hfffffffc)にする
     char buf[16];
     snprintf(buf, sizeof(buf), "32'h%08x", static_cast<unsigned int>(offset));
     return std::string(buf);
