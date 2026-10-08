@@ -1,0 +1,12 @@
+; expect: asm syntax error: function name conflicts with local label notation '.foo'
+; '.'で始まる関数名を宣言した → エラーになるべき
+; '.'で始まる綴りは局所ラベルとみなすため，関数名と区別できない
+; 本体の.foo:は宣言の意図を示すためのもので，エラーは.global行の処理で先に出る
+
+.global main, .foo
+
+main:
+    ret
+
+.foo:
+    ret

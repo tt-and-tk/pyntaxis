@@ -369,13 +369,21 @@ void get_function_names(
             throw "asm syntax error: empty function name in .global '" + line + "'";
         }
 
-        // 数値表記・レジスタ表記と同じ綴りなら
-        // 即値・レジスタの位置に書いたときどちらとも解釈できるため，宣言の時点で受け付けない
+        // 即値・レジスタの位置に書いたとき名前とみなされない綴りなら，宣言の時点で受け付けない
+        // '.'で始まる綴りは局所ラベルと区別できない
+        if (function_name[0] == '.') {
+            throw "asm syntax error: function name conflicts with local label notation '" + function_name + "'";
+        }
+        // 数値・レジスタの表記はどちらとも解釈できる
         if (
             is_number_notation(function_name) || is_negative_notation(function_name)
             || is_register_notation(function_name)
         ) {
             throw "asm syntax error: function name conflicts with number or register notation '" + function_name + "'";
+        }
+        // 残る数字・'-'始まりの綴りは数値の書き誤りとみなす
+        if (!is_name_notation(function_name)) {
+            throw "asm syntax error: function name cannot start with digit or '-' '" + function_name + "'";
         }
 
         // すでにその名前の関数が登録されていれば
@@ -755,7 +763,7 @@ bool is_register_notation(const std::string &word) {
 }
 
 // 名前を書いたとみなす綴りかを返す(数値・レジスタの表記ではなく，数字・'-'・'.'以外で始まる形)
-// 数字・'-'で始まる綴りは数値の書き誤り，'.'で始まる綴りは局所ラベルとみなす(.globalで宣言できる関数名の規則とは別)
+// 数字・'-'で始まる綴りは数値の書き誤り，'.'で始まる綴りは局所ラベルとみなす(.globalで宣言できる関数名もこの規則に従う)
 bool is_name_notation(const std::string &word) {
     return !word.empty()
         && !('0' <= word[0] && word[0] <= '9') && word[0] != '-' && word[0] != '.'
