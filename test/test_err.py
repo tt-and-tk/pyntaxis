@@ -42,7 +42,7 @@ def main():
     )
 
     if not asm_files:
-        print("異常系テストケースが見つかりません。")
+        print("異常系テストケースが見つかりません．")
         sys.exit(1)
 
     detected = []    # エラー検出成功(アセンブラが期待どおりのエラーを返した)
