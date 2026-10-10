@@ -623,13 +623,13 @@ const command_form_t &select_form(
     // 合う形式があればそれを使う
     if (matched != nullptr) return *matched;
 
-    // 命令の書き方(引数形式)のうち引数の個数が合うもの(candidates)を一つずつ見て，
+    // 命令の書き方のうち引数の個数が合うものを一つずつ見て，
     // 関数名を書くべき位置に名前の綴りが書かれていないか調べる(例: callなら'call <function name>'と'call <register>')
-    // 宣言済みの関数名ならmatches_formでいずれかの形式に合うため，見つかれば未宣言の関数名
+    // 宣言済みの関数名ならいずれかの書き方に合っているため，見つかれば未宣言の関数名
     for (const command_form_t *form : candidates) {
         int arg_num = 0;    // 照合中の引数の番号
 
-        // その形式が取る引数の種類を順に見て，書かれた引数と対応づける
+        // その書き方で引数に書くべきもの(関数名・レジスタなど)を順に見て，書かれた引数と対応づける
         for (const arg_t arg_type : *form) {
             // ZEROは書かれた引数を取らない
             if (arg_type == arg_t::ZERO) continue;
