@@ -623,7 +623,29 @@ const command_form_t &select_form(
     // 合う形式があればそれを使う
     if (matched != nullptr) return *matched;
 
-    // どの形式にも合わない(callの呼び出し先が関数名でもレジスタでもない場合など)
+    // 命令の書き方のうち引数の個数が合うものを一つずつ見て，
+    // 関数名を書くべき位置に名前の綴りが書かれていないか調べる(例: callなら'call <function name>'と'call <register>')
+    // 宣言済みの関数名ならいずれかの書き方に合っているため，ここで見つかる名前は未宣言の関数名
+    for (const command_form_t *form : candidates) {
+        int arg_num = 0;    // 照合中の引数の番号
+
+        // その書き方で引数に書くべきもの(関数名・レジスタなど)を順に見て，書かれた引数と対応づける
+        for (const arg_t arg_type : *form) {
+            // 機械語側で0を入れるだけの項目だけは書かれた引数と対応しないため，引数の番号を進めずに飛ばす
+            if (arg_type == arg_t::ZERO) continue;
+
+            // 対応する書かれた引数を取り出し，引数の番号を進める
+            const std::string &arg = args[arg_num];
+            arg_num++;
+
+            // 関数名の位置に名前の綴りを書いたなら，未宣言の関数名として報告する
+            if (arg_type == arg_t::FUNC_NAME && is_name_notation(arg)) {
+                throw "asm syntax error: undeclared function '" + arg + "'";
+            }
+        }
+    }
+
+    // どの形式にも合わない(callの呼び出し先に数値を書いた場合など)
     // 何を書けるかが分かるよう，個数の合う形式の書き方を並べて示す
     std::string expected;
     for (const command_form_t *form : candidates) {
@@ -828,11 +850,14 @@ operand_t convert_arg(
         return {"", 0, ref_t::FUNCTION, converted_arg};
     }
 
-    // マスク・即値の位置に名前を書いたなら
+    // 関数名・マスク・即値の位置に名前を書いたなら
     // 'r'で始まる名前をレジスタとみなさないよう，レジスタの判定より前に検出する
-    if ((arg_type == arg_t::MASK || arg_type == arg_t::RAW_DATA) && is_name_notation(converted_arg)) {
-        // 即値の位置の宣言済みの関数名は上で解決したため，残るのは未宣言の関数名
-        if (arg_type == arg_t::RAW_DATA) throw "asm syntax error: undeclared function '" + arg + "'";
+    if (
+        (arg_type == arg_t::FUNC_NAME || arg_type == arg_t::MASK || arg_type == arg_t::RAW_DATA)
+        && is_name_notation(converted_arg)
+    ) {
+        // 関数名・即値の位置の宣言済みの関数名は関数の参照として返したため，残るのは未宣言の関数名
+        if (arg_type != arg_t::MASK) throw "asm syntax error: undeclared function '" + arg + "'";
         // マスクの位置には名前を書けないため，期待する引数の種類と書かれた引数を示す
         throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
     }
