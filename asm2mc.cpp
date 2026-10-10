@@ -623,7 +623,7 @@ const command_form_t &select_form(
     // 合う形式があればそれを使う
     if (matched != nullptr) return *matched;
 
-    // 個数の合う形式ごとに，書かれた引数を関数名の位置に名前の綴りがないか調べる
+    // 個数の合う形式ごとに，関数名の位置に名前の綴りが書かれていないか調べる
     // (宣言済みの関数名ならmatches_formでいずれかの形式に合うため，見つかれば未宣言の関数名)
     for (const command_form_t *form : candidates) {
         int arg_num = 0;    // 照合中の引数の番号
