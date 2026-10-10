@@ -625,7 +625,7 @@ const command_form_t &select_form(
 
     // 命令の書き方のうち引数の個数が合うものを一つずつ見て，
     // 関数名を書くべき位置に名前の綴りが書かれていないか調べる(例: callなら'call <function name>'と'call <register>')
-    // 宣言済みの関数名ならいずれかの書き方に合っているため，見つかれば未宣言の関数名
+    // 宣言済みの関数名ならいずれかの書き方に合っているため，ここで見つかる名前は未宣言の関数名
     for (const command_form_t *form : candidates) {
         int arg_num = 0;    // 照合中の引数の番号
 
