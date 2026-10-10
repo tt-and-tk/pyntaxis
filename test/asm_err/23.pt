@@ -1,5 +1,5 @@
 ; expect: asm syntax error: jump target must be a local label '5'
-; ジャンプ先がラベルでない（数値指定）→ エラーになるべき
+; ジャンプ先がラベルでない(数値指定)→ エラーになるべき
 
 .global main
 

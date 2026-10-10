@@ -1,4 +1,4 @@
-; movの負の即値（RAW_DATA）が33bit目の即値使用フラグを保持することを確認する
+; movの負の即値(RAW_DATA)が33bit目の即値使用フラグを保持することを確認する
 
 .global main
 
