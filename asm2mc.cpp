@@ -631,10 +631,11 @@ const command_form_t &select_form(
 
         // その書き方で引数に書くべきもの(関数名・レジスタなど)を順に見て，書かれた引数と対応づける
         for (const arg_t arg_type : *form) {
-            // ZEROは書かれた引数を取らない
+            // 機械語側で0を入れるだけの項目はアセンブリに書かれないため，引数の番号を進めずに飛ばす
+            // (関数名以外の項目は書かれた引数と対応するため，番号を進めてから飛ばす)
             if (arg_type == arg_t::ZERO) continue;
 
-            // 対応する書かれた引数を取り出す
+            // 対応する書かれた引数を取り出し，引数の番号を進める
             const std::string &arg = args[arg_num];
             arg_num++;
 
