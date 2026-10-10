@@ -846,11 +846,14 @@ operand_t convert_arg(
         return {"", 0, ref_t::FUNCTION, converted_arg};
     }
 
-    // マスク・即値の位置に名前を書いたなら
+    // 関数名・マスク・即値の位置に名前を書いたなら
     // 'r'で始まる名前をレジスタとみなさないよう，レジスタの判定より前に検出する
-    if ((arg_type == arg_t::MASK || arg_type == arg_t::RAW_DATA) && is_name_notation(converted_arg)) {
-        // 即値の位置の宣言済みの関数名は上で解決したため，残るのは未宣言の関数名
-        if (arg_type == arg_t::RAW_DATA) throw "asm syntax error: undeclared function '" + arg + "'";
+    if (
+        (arg_type == arg_t::FUNC_NAME || arg_type == arg_t::MASK || arg_type == arg_t::RAW_DATA)
+        && is_name_notation(converted_arg)
+    ) {
+        // 関数名・即値の位置の宣言済みの関数名は上で解決したため，残るのは未宣言の関数名
+        if (arg_type != arg_t::MASK) throw "asm syntax error: undeclared function '" + arg + "'";
         // マスクの位置には名前を書けないため，期待する引数の種類と書かれた引数を示す
         throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
     }
