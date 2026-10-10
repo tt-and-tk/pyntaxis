@@ -623,18 +623,21 @@ const command_form_t &select_form(
     // 合う形式があればそれを使う
     if (matched != nullptr) return *matched;
 
-    // どの形式にも合わず，関数名の位置に名前の綴りを書いたなら，未宣言の関数名とみなす
-    // (宣言済みの関数名ならmatches_formでいずれかの形式に合うため)
+    // 個数の合う形式ごとに，書かれた引数を関数名の位置に名前の綴りがないか調べる
+    // (宣言済みの関数名ならmatches_formでいずれかの形式に合うため，見つかれば未宣言の関数名)
     for (const command_form_t *form : candidates) {
         int arg_num = 0;    // 照合中の引数の番号
 
+        // 形式の引数を順に見て，書かれた引数と対応づける
         for (const arg_t arg_type : *form) {
             // ZEROは書かれた引数を取らない
             if (arg_type == arg_t::ZERO) continue;
 
+            // 対応する書かれた引数を取り出す
             const std::string &arg = args[arg_num];
             arg_num++;
 
+            // 関数名の位置に名前の綴りを書いたなら，未宣言の関数名として報告する
             if (arg_type == arg_t::FUNC_NAME && is_name_notation(arg)) {
                 throw "asm syntax error: undeclared function '" + arg + "'";
             }
