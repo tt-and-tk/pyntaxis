@@ -624,7 +624,7 @@ const command_form_t &select_form(
     if (matched != nullptr) return *matched;
 
     // どの形式にも合わず，関数名の位置に名前の綴りを書いたなら，未宣言の関数名とみなす
-    // (宣言済みの関数名なら上で形式に合っているため)
+    // (宣言済みの関数名ならmatches_formでいずれかの形式に合うため)
     for (const command_form_t *form : candidates) {
         int arg_num = 0;    // 照合中の引数の番号
 
