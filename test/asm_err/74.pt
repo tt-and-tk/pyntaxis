@@ -1,0 +1,10 @@
+; expect: asm syntax error: fail arguments 'call .loop' (expected 'call <function name>' or 'call <register>')
+; callの呼び出し先に局所ラベルを書いた → エラーになるべき
+; '.'で始まる綴りは関数名として宣言できないため，未宣言の関数名ではなく書き方の誤りとして報告する
+
+.global main
+
+main:
+.loop:
+    call .loop
+    ret
