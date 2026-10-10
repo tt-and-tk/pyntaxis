@@ -852,7 +852,7 @@ operand_t convert_arg(
         (arg_type == arg_t::FUNC_NAME || arg_type == arg_t::MASK || arg_type == arg_t::RAW_DATA)
         && is_name_notation(converted_arg)
     ) {
-        // 関数名・即値の位置の宣言済みの関数名は上で解決したため，残るのは未宣言の関数名
+        // 関数名・即値の位置の宣言済みの関数名は関数の参照として返したため，残るのは未宣言の関数名
         if (arg_type != arg_t::MASK) throw "asm syntax error: undeclared function '" + arg + "'";
         // マスクの位置には名前を書けないため，期待する引数の種類と書かれた引数を示す
         throw "asm syntax error: expected " + arg_type_name(arg_type) + " but got '" + arg + "'";
