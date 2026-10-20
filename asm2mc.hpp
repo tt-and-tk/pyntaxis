@@ -142,14 +142,6 @@ const std::map<std::string, command_t> commands = {
                {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}}},
     {"wmr"  , {6, 0x05, {field_t::MASK, field_t::RS1, field_t::RS2, field_t::IMM},
                {{arg_t::MASK    , arg_t::REGISTER, arg_t::REGISTER, arg_t::RAW_DATA            }}}},
-
-    // 標準入出力系(IO系)
-    // printは出力する値をrs1で指定するか，即値で指定する
-    {"scan" , {7, 0x00, {field_t::RD},
-               {{arg_t::REGISTER                                                               }}}},
-    {"print", {7, 0x01, {field_t::RS1, field_t::IMM},
-               {{arg_t::REGISTER, arg_t::ZERO                                                  },
-                {arg_t::REGISTER, arg_t::RAW_DATA                                              }}}},
 };
 
 // 機械語の引数を後から解決する参照の種類

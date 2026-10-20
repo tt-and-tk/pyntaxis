@@ -24,19 +24,19 @@ main:
     sra r1 r2 r3 1fh
     mov fh r0 r1 42
     mov 1b r2 r1
-    eq r1 r2 .L1        ; index 19: 前方 → .L1(44) - 19 = 25
+    eq r1 r2 .L1        ; index 19: 前方 → .L1(41) - 19 = 22
     ne r1 r2 .L0        ; index 20: 後方 → .L0(0) - 20 = -20
-    lt r1 r2 .L1        ; index 21: 前方 → 23
+    lt r1 r2 .L1        ; index 21: 前方 → 20
     gt r1 r2 .L0        ; index 22: 後方 → -22
-    elt r1 r2 .L1       ; index 23: 前方 → 21
+    elt r1 r2 .L1       ; index 23: 前方 → 18
     egt r1 r2 .L0       ; index 24: 後方 → -24
-    ltu r1 r2 .L1       ; index 25: 前方 → 19
+    ltu r1 r2 .L1       ; index 25: 前方 → 16
     gtu r1 r2 .L0       ; index 26: 後方 → -26
-    eltu r1 r2 .L1      ; index 27: 前方 → 17
+    eltu r1 r2 .L1      ; index 27: 前方 → 14
     egtu r1 r2 .L0      ; index 28: 後方 → -28
-    jmp .L1             ; index 29: 絶対 → 0x4000 + 44 = 0x402c
-    call f              ; index 30: fの先頭PC → 0x4000 + 45 = 0x402d
-    mov fh r0 r1 f      ; index 31: fの先頭PC → 0x402d
+    jmp .L1             ; index 29: 絶対 → 0x4000 + 41 = 0x4029
+    call f              ; index 30: fの先頭PC → 0x4000 + 42 = 0x402a
+    mov fh r0 r1 f      ; index 31: fの先頭PC → 0x402a
     call r1
     rm fh r1 r3
     rm 3h r0 r3 100h
@@ -46,11 +46,8 @@ main:
     bwm fh r1 r2 r3 4
     rmr fh r16 r3 4
     wmr fh r16 r2 -4
-    scan r1
-    print r1
-    print r0 41h
-.L1:                    ; index 44
+.L1:                    ; index 41
     ret                 ; mainのretはシェルへ戻るためretのまま
 
-f:                      ; index 45
+f:                      ; index 42
     ret
