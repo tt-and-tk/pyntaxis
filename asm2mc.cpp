@@ -33,7 +33,7 @@ typedef struct {
 }
 
 // 関数
-// (pn2mc.exeへ公開する関数はasm2mc_main.hppで宣言する．以下はこのファイル内でしか使わないため，
+// (pn2mc.exeへ公開する関数は，ここではなくpn2mc.exeと共有するヘッダで宣言する．以下はこのファイル内でしか使わないため，
 //  pn2mc.exeへのリンク時にコンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
 static void assemble(std::ifstream &asm_file, machine_writer &writer);    // アセンブリを機械語にし，出力先の形式で書き出す
@@ -238,10 +238,8 @@ void get_args(int argc, char **argv, args_t &args) {
             && args.sv_file_name.substr(args.sv_file_name.length() - 3) == ".sv"
         );
 
-    // 実行ファイル名のうちファイル名の部分(最後のパス区切りより後)が，Qosmosの実行ファイル名として使えるか
-    // ディレクトリ部分の.(../binなど)は名前に関わらないため問わない
-    const std::string bin_base_name = args.bin_file_name.substr(args.bin_file_name.find_last_of("/\\") + 1);
-    const bool bin_name_ok = !output_bin || is_executable_name(bin_base_name);
+    // 実行ファイルを出力する場合だけ，指定されたファイル名がQosmosの実行ファイル名として使えるか確かめる
+    const bool bin_name_ok = !output_bin || is_executable_name(args.bin_file_name);
 
     // コマンドライン引数が不正ではないことをチェック
     if (!asm_name_ok || both_output || !sv_name_ok || !bin_name_ok) {
@@ -947,11 +945,15 @@ void throw_if_tab(const std::string &line) {
     }
 }
 
-// Qosmosの実行ファイル名として使えるかを返す
+// 出力先のファイル名(ディレクトリを含んでよい)が，Qosmosの実行ファイル名として使えるかを返す
 // Qosmosは拡張子(.)を持たないファイルだけを実行ファイルとして探し，名前は8.3形式の短い名前で扱う
 // このため基本名だけの1〜8文字で，FATの短い名前に使えない文字(制御文字・空白・記号)を含まないものに限る
 // 8文字を超える名前はカード上で別の短い名前(HELLOW~1など)になり，付けた名前で実行できないため受け付けない
-bool is_executable_name(const std::string &name) {
+bool is_executable_name(const std::string &file_name) {
+    // 最後のパス区切りより後を名前とする
+    // (ディレクトリ部分の.(../binなど)は名前に関わらないため問わない)
+    const std::string name = file_name.substr(file_name.find_last_of("/\\") + 1);
+
     // 基本名は1〜8文字
     if (name.empty() || name.length() > 8) return false;
 

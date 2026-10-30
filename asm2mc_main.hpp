@@ -8,6 +8,6 @@
 // 処理に成功したら0，失敗したら1を返す
 int assemble_asm_to_mc(int argc, char **argv);
 
-// Qosmosの実行ファイル名として使えるかを返す．ディレクトリを除いたファイル名の部分を受け取る
-// 基本名だけの1〜8文字で，FATの短い名前に使えない文字を含まないものに限る
-bool is_executable_name(const std::string &name);
+// 出力先のファイル名(ディレクトリを含んでよい)が，Qosmosの実行ファイル名として使えるかを返す
+// ディレクトリを除いた部分が，基本名だけの1〜8文字で，FATの短い名前に使えない文字を含まないものに限る
+bool is_executable_name(const std::string &file_name);
