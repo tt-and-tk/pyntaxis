@@ -33,8 +33,8 @@ typedef struct {
 }
 
 // 関数
-// (assemble_asm_to_mc以外はこのファイル内でしか使わないため，pn2mc.exeへのリンク時に
-//  コンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
+// (pn2mc.exeへ公開する関数はasm2mc_main.hppで宣言する．以下はこのファイル内でしか使わないため，
+//  pn2mc.exeへのリンク時にコンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
 static void assemble(std::ifstream &asm_file, machine_writer &writer);    // アセンブリを機械語にし，出力先の形式で書き出す
 static std::string read_global_line(std::ifstream &asm_file);            // .global行まで読み飛ばし，コメントを除いて返す
@@ -76,7 +76,6 @@ static bool is_negative_notation(const std::string &word);               // 負�
 static bool is_register_notation(const std::string &word);               // レジスタ表記('r'+数値表記)として妥当か
 static bool is_name_notation(const std::string &word);                   // 名前を書いたとみなす綴りか
 static void throw_if_tab(const std::string &line);                       // タブ文字があればエラーにする
-static bool is_executable_name(const std::string &name);                 // Qosmosの実行ファイル名として使えるか
 static void resolve_refs(                                                // 関数・局所ラベルの参照をPC/相対オフセットに解決する
     std::vector<instruction_t> &instructions,
     const std::map<std::string, std::size_t> &functions,
