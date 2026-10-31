@@ -33,8 +33,8 @@ typedef struct {
 }
 
 // 関数
-// (pn2mc.exeへ公開する関数は，ここではなくpn2mc.exeと共有するヘッダで宣言する．以下はこのファイル内でしか使わないため，
-//  pn2mc.exeへのリンク時にコンパイラ側の同名シンボルと衝突しないようすべてstaticにする)
+// (pn2mc.exeへ公開する関数は，ここではなくpn2mc.exeと共有するヘッダで宣言する．以下はこのファイル内だけで使うため，
+//  pn2mc.exeへのリンク時にコンパイラ側の同名シンボルとの衝突を避けるようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
 static void assemble(std::ifstream &asm_file, machine_writer &writer);    // アセンブリを機械語にし，出力先の形式で書き出す
 static std::string read_global_line(std::ifstream &asm_file);            // .global行まで読み飛ばし，コメントを除いて返す
@@ -947,14 +947,14 @@ void throw_if_tab(const std::string &line) {
 
 // 出力先のファイル名(ディレクトリを含んでよい)が，Qosmosの実行ファイル名として使えるかを返す
 // Qosmosは拡張子(.)を持たないファイルだけを実行ファイルとして探し，名前は8.3形式の短い名前で扱う
-// このため基本名だけの1〜8文字で，FATの短い名前に使えない文字(制御文字・空白・記号)を含まないものに限る
-// 8文字を超える名前はカード上で別の短い名前(HELLOW~1など)になり，付けた名前で実行できないため受け付けない
+// このためディレクトリを除いた名前は，基本名だけの1〜8文字で，FATの短い名前に使える文字だけから成るものに限る
+// 8文字までに限るのは，それを超える名前がカード上で別の短い名前(HELLOW~1など)になり，付けた名前で実行できなくなるためである
 bool is_executable_name(const std::string &file_name) {
-    // 最後のパス区切りより後を名前とする
-    // (ディレクトリ部分の.(../binなど)は名前に関わらないため問わない)
+    // 最後のパス区切りより後を，ディレクトリを除いた名前として取り出す
+    // (../binのようにディレクトリ部分に「.」があってもよい)
     const std::string name = file_name.substr(file_name.find_last_of("/\\") + 1);
 
-    // 基本名は1〜8文字
+    // ディレクトリを除いた名前は1〜8文字
     if (name.empty() || name.length() > 8) return false;
 
     for (const unsigned char c : name) {
