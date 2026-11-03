@@ -1,0 +1,16 @@
+; 命令と同じ綴りのsyscall・sysretも関数名にでき，命令の位置では命令，関数名の位置では関数として扱われることを確認する
+
+.global main, syscall, sysret
+
+main:
+    call syscall            ; index 0: 関数syscall(5)を呼ぶ
+    mov 15 r0 r1 sysret     ; index 1: 関数sysretの先頭のPC(6)をr1へ載せる
+    syscall                 ; index 2: syscall命令
+    sysret                  ; index 3: sysret命令
+    ret                     ; index 4
+
+syscall:
+    ret                     ; index 5
+
+sysret:
+    ret                     ; index 6
