@@ -122,7 +122,7 @@ const std::map<std::string, command_t> commands = {
                 {arg_t::REGISTER, arg_t::ZERO                                                  }}}},
     {"ret"  , {5, 0x02, {},
                {{                                                                              }}}},
-    // syscall/sysretは動作状態を切り替えて飛ぶ．飛び先と戻り先はCPU内のレジスタが持つため引数を取らない
+    // syscall/sysretは動作状態(カーネルモード・ユーザーモード)を切り替えて飛ぶ．飛び先と戻り先はCPU内のレジスタが持つため引数を取らない
     {"syscall", {5, 0x03, {},
                {{                                                                              }}}},
     {"sysret" , {5, 0x04, {},

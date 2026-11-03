@@ -1,5 +1,5 @@
 ; expect: asm syntax error: fail argument count 'syscall handler' (expected 'syscall')
-; syscallは引数を取らない(飛び先はKENTRYが持つ)ため，飛び先を書くとエラーになる
+; syscallは引数を取らない(飛び先はレジスタKENTRY(r17)が持つ)ため，飛び先を書くとエラーになる
 
 .global main, handler
 
