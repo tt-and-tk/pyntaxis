@@ -1,0 +1,9 @@
+; 実行ファイルでも，syscall/sysretがそれぞれの機械語(m_type=5，func=3/4，ほかのフィールドは0)になることを確認する
+; syscall: 0xA180000000000000，sysret: 0xA200000000000000，ret: 0xA100000000000000
+
+.global main
+
+main:
+    syscall     ; index 0
+    sysret      ; index 1
+    ret         ; index 2

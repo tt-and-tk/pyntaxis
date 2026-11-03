@@ -1,0 +1,16 @@
+; 動作状態を切り替える命令syscall/sysretが，引数なしでそれぞれの機械語の関数呼び出しになることを確認する
+; システムコールハンドラの番地をKENTRY(r17)へ載せてからsyscallし，ハンドラはKRET(r18)を読み出してsysretで戻る
+; sysretで終わる関数も，全関数にretが必要な規則に従ってretを置く
+
+.global main, handler
+
+main:
+    mov 15 r0 r17 handler   ; index 0: KENTRYへハンドラの番地(4)を書き込む
+    syscall                 ; index 1: ハンドラへ飛び，戻り先(2)をKRETへ書き込む
+    mov 15 r0 r1 1          ; index 2
+    ret                     ; index 3
+
+handler:
+    mov 15 r18 r2           ; index 4: KRETを読み出す
+    sysret                  ; index 5: KRETの番地へ戻る
+    ret                     ; index 6
