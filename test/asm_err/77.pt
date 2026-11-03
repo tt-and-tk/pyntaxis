@@ -1,0 +1,10 @@
+; expect: asm syntax error: function without ret 'handler'
+; sysretはretの代わりにならないため，sysretで終わりretを持たない関数はエラーになる
+
+.global main, handler
+
+main:
+    ret
+
+handler:
+    sysret
