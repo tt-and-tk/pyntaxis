@@ -47,7 +47,7 @@ main:
     rmr fh r16 r3 4
     wmr fh r16 r2 -4
 .L1:                    ; index 41
-    ret                 ; mainのretはretのまま
+    ret                 ; mainのretは置き換えずに残る(実行ファイルは終了をシステムコールで伝えるため)
 
 f:                      ; index 42
     ret
