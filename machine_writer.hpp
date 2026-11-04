@@ -6,13 +6,12 @@
 #include "asm2mc.hpp"
 
 // アセンブルした命令列の出力先
-// 出力先ごとに，命令を置くPC・命令数の上限・mainのretの扱いと，出力の形式が異なる
+// 出力先ごとに，命令数の上限・mainのretの扱いと，出力の形式が異なる(先頭の命令のPCはどちらも0)
 // 同じメソッドを順に呼べば，インスタンスの種類に応じた内容がcontentに組み上がる
 class machine_writer {
 public:
     virtual ~machine_writer() {}
 
-    virtual std::size_t base_pc() const = 0;                              // 先頭の命令のPC
     virtual std::size_t max_instructions() const = 0;                     // 命令数の上限
     virtual bool main_ret_halts() const = 0;                              // mainのretを自分自身へのjmpに置き換えるか
     virtual void write_header(std::size_t instruction_num) = 0;           // 命令列の前に置く内容を出力する
@@ -33,9 +32,6 @@ public:
     // プログラムカウンタのビット幅(14ビット)がちょうど表現できる範囲として設定したハードウェア側と揃える
     // ROM自体に固定容量は無い(ROM_SIZEはプログラムの命令数から自動算出する)
     static constexpr std::size_t MAX_INSTRUCTIONS = 16384;    // ROMに置ける命令数の上限
-
-    // ROMの先頭がPC 0にあたる
-    std::size_t base_pc() const override { return 0; }
 
     // ROMに置ける命令数の上限
     std::size_t max_instructions() const override { return this->MAX_INSTRUCTIONS; }
@@ -120,22 +116,16 @@ private:
 
 // Qosmosの実行ファイルの出力先
 // 実行ファイルはヘッダを持たず，命令を先頭から1命令8バイトずつ並べたもの
-// シェルはこれを，メモリの後半(0x8000番地から．PC 0x4000からに対応する)のうち末尾のワードを除いた範囲の先頭へ書き写し，
-// 先頭の命令をCALLで呼び出す(末尾のワードには，シェルがシステムコールの入口の番地を書き込む)
+// シェルはこれを，実行ファイルに割り振った領域の先頭へ書き写し，先頭の命令(領域の中のPC 0)からユーザーモードで実行する
 class bin_writer : public machine_writer {
 public:
-    static constexpr std::size_t BASE_PC = 0x4000;              // メモリの後半の先頭の命令のPC
-    static constexpr std::size_t RAM_HALF_SIZE = 32 * 1024;     // メモリの後半の大きさ(バイト)
-    static constexpr std::size_t SYSCALL_ENTRY_SIZE = 4;        // メモリの後半の末尾にある，システムコールの入口の番地を置くワードの大きさ(バイト)
+    static constexpr std::size_t REGION_SIZE = 32 * 1024;       // シェルが実行ファイルに割り振る領域の大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
 
-    // シェルはメモリの後半の先頭から実行ファイルを置く
-    std::size_t base_pc() const override { return this->BASE_PC; }
+    // 領域に収まる命令数
+    std::size_t max_instructions() const override { return this->REGION_SIZE / this->INSTRUCTION_SIZE; }
 
-    // メモリの後半のうち，末尾のシステムコールの入口と重ならずに収まる命令数
-    std::size_t max_instructions() const override { return (this->RAM_HALF_SIZE - this->SYSCALL_ENTRY_SIZE) / this->INSTRUCTION_SIZE; }
-
-    // シェルがCALLで呼び出すため，mainのretはそのままシェルへ戻る
+    // 実行ファイルは終了をシステムコールでシェルへ伝え，mainのretには到達しない前提のため，retのまま残す
     bool main_ret_halts() const override { return false; }
 
     // ヘッダを持たない
