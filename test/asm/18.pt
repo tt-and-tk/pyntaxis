@@ -1,0 +1,17 @@
+; 動作状態(カーネルモード・ユーザーモード)を切り替える命令syscall/sysretが，引数なしでmachine.svhの関数syscall()・sysret()の呼び出しになることを確認する
+; KENTRY(r17)はsyscallの飛び先を，KRET(r18)はsysretの戻り先を持つレジスタである
+; syscallを受け付ける関数(ハンドラ)の番地をKENTRYへ載せてからsyscallし，ハンドラはKRETを読み出してsysretで戻る
+; sysretで終わる関数も，全関数にretが必要な規則に従ってretを置く
+
+.global main, handler
+
+main:
+    mov 15 r0 r17 handler   ; index 0: KENTRYへハンドラの番地(4)を書き込む
+    syscall                 ; index 1: ハンドラへ飛び，戻り先(2)をKRETへ書き込む
+    mov 15 r0 r1 1          ; index 2
+    ret                     ; index 3
+
+handler:
+    mov 15 r18 r2           ; index 4: KRETを読み出す
+    sysret                  ; index 5: KRETの番地へ戻る
+    ret                     ; index 6
