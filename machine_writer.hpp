@@ -120,10 +120,11 @@ private:
 class bin_writer : public machine_writer {
 public:
     static constexpr std::size_t REGION_SIZE = 32 * 1024;       // シェルが実行ファイルに割り振る領域の大きさ(バイト)
+    static constexpr std::size_t ARGS_AREA_SIZE = 256;          // 領域の末尾のうち，シェルがコマンド名と引数を置くために取る大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
 
-    // 領域に収まる命令数
-    std::size_t max_instructions() const override { return this->REGION_SIZE / this->INSTRUCTION_SIZE; }
+    // 領域のうち，末尾のコマンド名と引数の置き場と重ならずに収まる命令数
+    std::size_t max_instructions() const override { return (this->REGION_SIZE - this->ARGS_AREA_SIZE) / this->INSTRUCTION_SIZE; }
 
     // 実行ファイルは終了をシステムコールでシェルへ伝え，mainのretには到達しない前提のため，retのまま残す
     bool main_ret_halts() const override { return false; }
