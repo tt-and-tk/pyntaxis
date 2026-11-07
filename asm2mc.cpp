@@ -965,8 +965,8 @@ bool is_executable_name(const std::string &file_name) {
 }
 
 // 関数・局所ラベルの参照を解決し，引数のSystemVerilog上の表記と値を埋める
-// 先頭の命令のPCは0のため，各命令のインデックスがそのままPCになる
-// 関数・jmp(絶対)は「参照先のindex」，F系(相対)は「ラベルのindex − 自命令のindex」に解決する
+// 先頭の命令のPCは0のため，各命令の位置(先頭の命令から数えた順番)がそのままPCになる
+// 関数・jmp(絶対)は参照先の命令の位置に，F系(相対)はラベルの位置から自命令の位置を引いた差に解決する
 void resolve_refs(
     std::vector<instruction_t> &instructions,
     const std::map<std::string, std::size_t> &functions,
