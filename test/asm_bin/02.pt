@@ -1,39 +1,8 @@
-; 命令数がちょうど実行ファイルの上限(メモリの後半32KBから末尾のシステムコールの入口4バイトを除いた大きさに収まる4095命令)の場合は出力できる
+; 命令数がちょうど実行ファイルの上限(シェルが割り振る32KBの領域から，末尾のコマンド名と引数の置き場256バイトを除いた大きさに収まる4064命令)の場合は出力できる
 
 .global main
 
 main:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
     nop
     nop
     nop

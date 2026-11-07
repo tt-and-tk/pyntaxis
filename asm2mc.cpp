@@ -79,8 +79,7 @@ static void throw_if_tab(const std::string &line);                       // タ�
 static void resolve_refs(                                                // 関数・局所ラベルの参照をPC/相対オフセットに解決する
     std::vector<instruction_t> &instructions,
     const std::map<std::string, std::size_t> &functions,
-    const std::map<std::string, local_label_t> &local_labels,
-    const std::size_t base_pc
+    const std::map<std::string, local_label_t> &local_labels
 );
 static std::string offset2imm(const long offset);                        // 相対オフセットをイミディエイト表記にする(負は32bit2の補数)
 
@@ -287,7 +286,7 @@ void assemble(std::ifstream &asm_file, machine_writer &writer) {
     }
 
     // 関数・局所ラベルの参照を解決する(関数・jmpはPC，F系は相対オフセット)
-    resolve_refs(instructions, functions, local_labels, writer.base_pc());
+    resolve_refs(instructions, functions, local_labels);
 
     // 命令列を出力先の形式で書き出す
     writer.write_header(instructions.size());
@@ -487,9 +486,9 @@ void assemble_body(
         // ROMではmainをCALLできず戻り先が無いため，main内のretはすべてプログラムの終了を表す
         // 自分自身へのjmp(無限ループ)に置き換えて，どの経路でmainを抜けても同じ終了状態にする
         // 先頭から最初に現れるretだけを置き換える方式は，早期returnがあると末尾のretが残るため採用しない
-        // 実行ファイルではシェルがmainをCALLするため，retのまま残してシェルへ戻す
+        // 実行ファイルでは，プログラムの終了をQosmosのシステムコールで伝えるため，retは置き換えない
         if (writer.main_ret_halts() && current_function == "main" && command == "ret") {
-            const std::size_t pc = writer.base_pc() + instructions.size() - 1;    // このretのPC
+            const std::size_t pc = instructions.size() - 1;    // このretのPC
             instructions.back().command = "jmp";
             instructions.back().operands = {
                 {"0", 0, ref_t::NONE, ""},
@@ -966,13 +965,12 @@ bool is_executable_name(const std::string &file_name) {
 }
 
 // 関数・局所ラベルの参照を解決し，引数のSystemVerilog上の表記と値を埋める
-// 各命令のインデックスがそのまま先頭の命令からの位置になるため，ループのindexを使って計算できる
-// 関数・jmp(絶対)は「先頭の命令のPC + 参照先のindex」，F系(相対)は「ラベルのindex − 自命令のindex」に解決する
+// 先頭の命令のPCは0のため，各命令の位置(先頭の命令から数えた順番)がそのままPCになる
+// 関数・jmp(絶対)は参照先の命令の位置に，F系(相対)はラベルの位置から自命令の位置を引いた差に解決する
 void resolve_refs(
     std::vector<instruction_t> &instructions,
     const std::map<std::string, std::size_t> &functions,
-    const std::map<std::string, local_label_t> &local_labels,
-    const std::size_t base_pc
+    const std::map<std::string, local_label_t> &local_labels
 ) {
     for (std::size_t index = 0; index < instructions.size(); index++) {
         for (operand_t &operand : instructions[index].operands) {
@@ -1000,13 +998,13 @@ void resolve_refs(
 
             // 関数なら，その先頭PCにする
             if (operand.ref == ref_t::FUNCTION) {
-                const std::size_t pc = base_pc + functions.at(operand.name);
+                const std::size_t pc = functions.at(operand.name);
                 imm = std::to_string(pc);
                 imm_value = static_cast<std::uint32_t>(pc);
             }
             // jmp(絶対)なら，ラベルのPCにする
             else if (operand.ref == ref_t::LABEL_ABS) {
-                const std::size_t pc = base_pc + label->index;
+                const std::size_t pc = label->index;
                 imm = std::to_string(pc);
                 imm_value = static_cast<std::uint32_t>(pc);
             }
