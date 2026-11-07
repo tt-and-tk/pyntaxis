@@ -6,7 +6,7 @@
 #include "asm2mc.hpp"
 
 // アセンブルした命令列の出力先
-// 出力先ごとに，命令数の上限・mainのretの扱いと，出力の形式が異なる(先頭の命令のPCはどちらも0)
+// 出力先ごとに，命令数の上限・mainのretの扱い・出力の形式が異なる
 // 同じメソッドを順に呼べば，インスタンスの種類に応じた内容がcontentに組み上がる
 class machine_writer {
 public:
@@ -119,7 +119,7 @@ private:
 // シェルはこれを，実行ファイルに割り振った領域の先頭へ書き写し，先頭の命令(領域の中のPC 0)からユーザーモードで実行する
 class bin_writer : public machine_writer {
 public:
-    static constexpr std::size_t REGION_SIZE = 32 * 1024;       // シェルが実行ファイルに割り振る領域の大きさ(バイト)
+    static constexpr std::size_t REGION_SIZE = 32 * 1024;       // シェルが実行ファイルに割り振る領域の大きさ(バイト．どの実行ファイルにも同じ大きさを割り振る)
     static constexpr std::size_t ARGS_AREA_SIZE = 256;          // 領域の末尾のうち，シェルがコマンド名と引数を置くために取る大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
 
