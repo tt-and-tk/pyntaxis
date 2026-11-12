@@ -1,11 +1,13 @@
-; expect: asm syntax error: empty function name in .global '.global ,main'
-; .globalの先頭にカンマを書いた → エラーになるべき
-; 最初のカンマの前に関数名がなく，空の関数名を宣言したことになる
+; expect: asm syntax error: label '.L0' defined in 'main' referenced from 'func'
+; F系命令で別の関数に定義された局所ラベルを参照した → エラーになるべき
+; 局所ラベルを参照できるのは，参照元と同じ関数内に定義されたラベルだけ
 
-.global ,main
+.global main, func
 
 main:
+.L0:
     ret
 
-:
+func:
+    eq r1 r2 .L0    ; .L0 はmainに定義されている
     ret

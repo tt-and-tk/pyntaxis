@@ -1,13 +1,13 @@
-; expect: asm syntax error: cannot call 'main'
-; callの呼び出し先にmainを書いた → エラーになるべき
-; mainはプログラムの開始点で，main内のretは自分自身へのjmpになるため，呼び出しても戻れない
+; expect: asm syntax error: label '.L0' defined in 'main' referenced from 'func'
+; 関数末尾の局所ラベルを次の関数から参照した → エラーになるべき
+; .L0 のindexはfuncの先頭と一致するが，定義したmainに属する
 
-.global main, f
+.global main, func
 
 main:
-    call f
     ret
+.L0:
 
-f:
-    call main
+func:
+    jmp .L0
     ret

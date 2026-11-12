@@ -1,11 +1,8 @@
-; expect: asm syntax error: function name conflicts with number or register notation '-5'
-; 負の数値表記と同じ綴りの関数名を宣言した → エラーになるべき
-; 即値の位置に書くと，負の10進数と関数名のどちらとも解釈できる
+; expect: asm syntax error: .global must start at the beginning of the line and be followed by a space '.global,main'
+; .globalの直後がカンマ → エラーになるべき
+; .globalの直後は半角スペースで区切る
 
-.global main, -5
+.global,main
 
 main:
-    ret
-
--5:
     ret

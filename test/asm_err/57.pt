@@ -1,9 +1,10 @@
-; expect: asm syntax error: local label before main function '.L0'
-; main関数より前に局所ラベルを定義した → エラーになるべき
-; どの関数にも属さない局所ラベルは参照できない
+; expect: asm syntax error: fail number notation '.L0'
+; 即値の位置に局所ラベルを書いた → 未宣言の関数とは案内しないエラーになるべき
+; '.'で始まる綴りは局所ラベルであり，関数名にはできないため名前とはみなさない
 
 .global main
 
-.L0:
 main:
+.L0:
+    mov fh r0 r1 .L0
     ret

@@ -1,9 +1,11 @@
-; expect: asm syntax error: fail argument count 'add r1 r2 r3 r4' (expected 'add <register> <register> <register>')
-; 引数過多のエラーテスト(異常系)
-; addは引数3つだが4つ与えている
+; expect: asm syntax error: function name conflicts with number or register notation 'fh'
+; 数値表記と同じ綴りの関数名を宣言した → エラーになるべき
+; 即値の位置に書くと，16進数のfと関数名のどちらとも解釈できる
 
-.global main
+.global main, fh
 
 main:
-    add r1 r2 r3 r4
+    ret
+
+fh:
     ret

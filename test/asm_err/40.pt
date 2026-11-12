@@ -1,12 +1,9 @@
-; expect: asm syntax error: jump target must be a local label 'func1'
-; jmpの飛び先に関数名を書いた → エラーになるべき
-; jmpの飛び先には局所ラベルしか書けず，関数名は先頭indexに解決されない
+; expect: asm syntax error: immediate out of range '-2147483649'
+; 即値に-2147483649を書いた → エラーになるべき
+; 即値は32ビットの2の補数であり，書ける負の値は-2147483648まで
 
-.global main, func1
+.global main
 
 main:
-    jmp func1
-    ret
-
-func1:
+    wmr fh r1 r2 -2147483649
     ret

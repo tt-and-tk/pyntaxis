@@ -1,10 +1,9 @@
-; expect: asm syntax error: cannot take the address of 'main'
-; 即値の位置にmainを書いた → エラーになるべき
-; mainの番地をレジスタへ載せると，call r1のような間接呼び出しでmainを呼べてしまう
+; expect: asm syntax error: local label before main function '.L0'
+; main関数より前に局所ラベルを定義した → エラーになるべき
+; どの関数にも属さない局所ラベルは参照できない
 
 .global main
 
+.L0:
 main:
-    mov fh r0 r1 main
-    call r1
     ret

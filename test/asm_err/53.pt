@@ -1,9 +1,9 @@
-; expect: asm syntax error: immediate out of range '-99999999999999999999'
-; 即値に64ビットにも収まらない桁数の負の値を書いた → エラーになるべき
-; 即値は32ビットの2の補数であり，書ける負の値は-2147483648まで
+; expect: asm syntax error: undeclared function 'read_buf'
+; 即値の位置に'r'で始まる未宣言の名前を書いた → 宣言漏れが分かるエラーになるべき
+; 'r'で始まってもレジスタ表記でない綴りは，レジスタではなく名前として扱う
 
 .global main
 
 main:
-    wmr fh r1 r2 -99999999999999999999
+    mov fh r0 r1 read_buf
     ret

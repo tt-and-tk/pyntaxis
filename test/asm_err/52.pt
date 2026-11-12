@@ -1,9 +1,9 @@
-; expect: asm syntax error: immediate out of range '-2147483649'
-; 即値に-2147483649を書いた → エラーになるべき
-; 即値は32ビットの2の補数であり，書ける負の値は-2147483648まで
+; expect: asm syntax error: expected immediate but got 'r3'
+; 即値を書くべき位置にレジスタを書いた → 即値が必要であることが分かるエラーになるべき
+; rmrの第4引数は即値であり，レジスタは受け付けない
 
 .global main
 
 main:
-    wmr fh r1 r2 -2147483649
+    rmr fh r16 r2 r3
     ret
