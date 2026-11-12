@@ -1,8 +1,0 @@
-; expect: asm syntax error: fail argument count 'sysret r18' (expected 'sysret')
-; sysretは引数を取らない(戻り先はレジスタKRET(r18)が持つ)ため，レジスタを書くとエラーになる
-
-.global main
-
-main:
-    sysret r18
-    ret

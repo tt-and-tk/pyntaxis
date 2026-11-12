@@ -1,11 +1,13 @@
-; expect: asm syntax error: function name conflicts with number or register notation 'r5'
-; レジスタ表記と同じ綴りの関数名を宣言した → エラーになるべき
-; callの呼び出し先に書くと，レジスタr5と関数名のどちらとも解釈できる
+; expect: asm syntax error: cannot call 'main'
+; callの呼び出し先にmainを書いた → エラーになるべき
+; mainはプログラムの開始点で，main内のretは自分自身へのjmpになるため，呼び出しても戻れない
 
-.global main, r5
+.global main, f
 
 main:
+    call f
     ret
 
-r5:
+f:
+    call main
     ret

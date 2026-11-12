@@ -1,12 +1,8 @@
-; expect: asm syntax error: expected register but got 'func1'
-; レジスタの位置に関数名を書いた → エラーになるべき
-; 関数名を先頭indexへ解決するのは関数名・即値の位置だけ
+; expect: asm syntax error: .global must start at the beginning of the line and be followed by a space '.global	main'
+; .globalの直後がタブ → エラーになるべき
+; .globalの直後は半角スペースで区切る(タブは非対応)
 
-.global main, func1
+.global	main
 
 main:
-    add func1 r2 r3
-    ret
-
-func1:
     ret

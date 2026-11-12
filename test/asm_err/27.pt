@@ -1,9 +1,9 @@
-; expect: asm syntax error: expected register but got 'fh'
-; レジスタを書くべき位置にマスクを書いた → エラーになるべき
-; rmrの第2引数はレジスタであり，マスクやイミディエイトデータは受け付けない
+; expect: asm syntax error: fail arguments 'call 5' (expected 'call <function name>' or 'call <register>')
+; callの呼び出し先に数値を書いた → エラーになるべき
+; 呼び出し先は関数名かレジスタのみで，番地の数値を直接指定する書き方は持たない
 
 .global main
 
 main:
-    rmr fh fh r2 0
+    call 5
     ret

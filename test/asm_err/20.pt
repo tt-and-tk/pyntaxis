@@ -1,12 +1,11 @@
-; expect: asm syntax error: fail argument count 'call func func' (expected 'call <function name>' or 'call <register>')
-; call引数過多のエラーテスト(異常系)
-; callの引数は呼び出し先関数名1つのみ
+; expect: asm syntax error: function name conflicts with number or register notation 'r5'
+; レジスタ表記と同じ綴りの関数名を宣言した → エラーになるべき
+; callの呼び出し先に書くと，レジスタr5と関数名のどちらとも解釈できる
 
-.global main, func
+.global main, r5
 
 main:
-    call func func
     ret
 
-func:
+r5:
     ret

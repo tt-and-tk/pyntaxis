@@ -1,9 +1,12 @@
-; expect: asm syntax error: fail argument count 'rmr fh r16 r2 0 4' (expected 'rmr <mask> <register> <register> <immediate>')
-; rmrの引数過多 → エラーになるべき
-; rmrの引数はmask・rs1・rd・immの4個で固定
+; expect: asm syntax error: jump target must be a local label 'func1'
+; jmpの飛び先に関数名を書いた → エラーになるべき
+; jmpの飛び先には局所ラベルしか書けず，関数名は先頭indexに解決されない
 
-.global main
+.global main, func1
 
 main:
-    rmr fh r16 r2 0 4
+    jmp func1
+    ret
+
+func1:
     ret

@@ -1,9 +1,14 @@
-; expect: asm syntax error: undeclared function 'read_2'
-; .globalに宣言していない'r'始まりの関数をcallした → エラーになるべき
-; 'r'に続く部分が数値表記ではないため，レジスタとしても解釈できない．名前として扱い，宣言漏れを報告する
+; expect: asm syntax error: empty function name in .global '.global main,,x'
+; .globalでカンマが連続した → エラーになるべき
+; カンマの間に関数名がなく，空の関数名を宣言したことになる
 
-.global main
+.global main,,x
 
 main:
-    call read_2
+    ret
+
+:
+    ret
+
+x:
     ret

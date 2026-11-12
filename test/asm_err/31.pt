@@ -1,11 +1,11 @@
-; expect: asm syntax error: function name conflicts with number or register notation 'fh'
-; 数値表記と同じ綴りの関数名を宣言した → エラーになるべき
-; 即値の位置に書くと，16進数のfと関数名のどちらとも解釈できる
+; expect: asm syntax error: empty function name in .global '.global ,main'
+; .globalの先頭にカンマを書いた → エラーになるべき
+; 最初のカンマの前に関数名がなく，空の関数名を宣言したことになる
 
-.global main, fh
+.global ,main
 
 main:
     ret
 
-fh:
+:
     ret

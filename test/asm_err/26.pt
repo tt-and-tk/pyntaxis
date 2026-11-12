@@ -1,9 +1,11 @@
-; expect: asm syntax error: fail argument count 'wmr fh r16 r1' (expected 'wmr <mask> <register> <register> <immediate>')
-; wmrのイミディエイトデータ省略 → エラーになるべき
-; wmrは番地をrs1+immで求めるため，immを省略できない
+; expect: asm syntax error: function name conflicts with number or register notation '-5'
+; 負の数値表記と同じ綴りの関数名を宣言した → エラーになるべき
+; 即値の位置に書くと，負の10進数と関数名のどちらとも解釈できる
 
-.global main
+.global main, -5
 
 main:
-    wmr fh r16 r1
+    ret
+
+-5:
     ret

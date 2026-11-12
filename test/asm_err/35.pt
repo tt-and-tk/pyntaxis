@@ -1,9 +1,8 @@
-; expect: asm syntax error: fail number notation '-1'
-; 負の値をマスクの位置に書いた → エラーになるべき
-; 負の値を書けるのは即値の位置だけ
+; expect: asm syntax error: .global must start at the beginning of the line and be followed by a space '  .global main'
+; .globalの前に空白がある → エラーになるべき
+; .globalは行頭から書く
 
-.global main
+  .global main
 
 main:
-    mov -1 r0 r1 42
     ret

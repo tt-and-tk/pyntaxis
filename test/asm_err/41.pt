@@ -1,14 +1,9 @@
-; expect: asm syntax error: empty function name in .global '.global main,,x'
-; .globalでカンマが連続した → エラーになるべき
-; カンマの間に関数名がなく，空の関数名を宣言したことになる
+; expect: asm syntax error: immediate out of range '-99999999999999999999'
+; 即値に64ビットにも収まらない桁数の負の値を書いた → エラーになるべき
+; 即値は32ビットの2の補数であり，書ける負の値は-2147483648まで
 
-.global main,,x
+.global main
 
 main:
-    ret
-
-:
-    ret
-
-x:
+    wmr fh r1 r2 -99999999999999999999
     ret

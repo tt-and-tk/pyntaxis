@@ -1,11 +1,9 @@
-; expect: asm syntax error: label must start at the beginning of the line '  func:'
-; 関数ラベルをインデントした → エラーになるべき
-; ラベルは行頭から書く
+; expect: asm syntax error: fail number notation '2x'
+; 即値の位置に数字で始まる数値でない綴りを書いた → 数値の書き誤りとしてエラーになるべき
+; 数字で始まる綴りは名前とはみなさない
 
-.global main, func
+.global main
 
 main:
-    call func
-    ret
-  func:
+    mov fh r0 r1 2x
     ret
