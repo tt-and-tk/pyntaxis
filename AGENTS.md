@@ -28,5 +28,5 @@ GitHubリポジトリ名: `tt-and-tk/pyntaxis`．
 
 | 文書(`specification`の中のパス) | 内容 |
 |:-|:-|
-| `pyntaxis/develop/index.md` | アセンブラのソースの構成，ビルド，テストの手順 |
+| `pyntaxis/develop/index.md` | アセンブラの開発の文書の一覧．ソースの構成・ビルド・テストの手順の各文書を挙げる |
 | `README.md` | 仕様書全体の構成 |
