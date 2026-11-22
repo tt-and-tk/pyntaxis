@@ -1,6 +1,7 @@
 ; 実行ファイルでは，mainの途中のret(早期return)も末尾のretも，自分自身へのjmpに置き換えずretのまま残る
 
 .global main
+.reserve 0
 
 main:
     eq r0 r0 .L0    ; index 0: 前方 → .L0(2) - 0 = 2

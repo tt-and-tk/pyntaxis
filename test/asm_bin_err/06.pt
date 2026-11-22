@@ -1,0 +1,9 @@
+; expect: asm syntax error: .reserve must start at the beginning of the line '    .reserve 0'
+; .reserveを字下げして書いた → エラーになるべき
+; .global行と同じく，宣言は行頭から書く
+
+.global main
+    .reserve 0
+
+main:
+    ret

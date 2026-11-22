@@ -1,0 +1,9 @@
+; expect: asm syntax error: .reserve value out of 32-bit range '.reserve 18446744073709551616'
+; .reserveに64ビットにも収まらない値を書いた → エラーになるべき
+; 2^64は，64ビットで値を求めると0に折り返すため，桁数でも範囲を確かめる
+
+.global main
+.reserve 18446744073709551616
+
+main:
+    ret

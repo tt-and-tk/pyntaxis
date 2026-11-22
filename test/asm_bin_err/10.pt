@@ -1,0 +1,10 @@
+; expect: asm syntax error: .stack value out of 32-bit range '.stack 100000000h'
+; .stackに32ビットに収まらない値を書いた → エラーになるべき
+; ヘッダの1ワードに書けないため
+
+.global main
+.reserve 0
+.stack 100000000h
+
+main:
+    ret

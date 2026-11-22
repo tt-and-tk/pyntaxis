@@ -19,6 +19,7 @@ ASM_BIN_ERR_DIR = os.path.join(SCRIPT_DIR, "asm_bin_err")
 BIN_DIR = os.path.join(SCRIPT_DIR, "bin")
 BIN_ANS_DIR = os.path.join(SCRIPT_DIR, "bin_ans")
 
+HEADER_SIZE = 16  # 実行ファイルの先頭のヘッダのバイト数
 INSTRUCTION_SIZE = 8  # 実行ファイルでの1命令のバイト数
 EXPECT_PREFIX = "; expect: "  # 異常系の期待するエラーメッセージを書く1行目の接頭辞
 
@@ -51,11 +52,16 @@ def read_expected(asm_path):
     return first_line[len(EXPECT_PREFIX):].strip()
 
 
+def header_words_of(data):
+    """実行ファイルのヘッダを，4バイトのワードごとの16進表記にして返す(差分表示用)．"""
+    return [f"{int.from_bytes(data[i:i + 4], 'little'):08x}" for i in range(0, min(len(data), HEADER_SIZE), 4)]
+
+
 def instructions_of(data):
-    """実行ファイルの内容を，1命令ずつ64ビットの機械語の16進表記にして返す(差分表示用)．"""
+    """実行ファイルのヘッダより後ろの内容を，1命令ずつ64ビットの機械語の16進表記にして返す(差分表示用)．"""
     return [
         f"{int.from_bytes(data[i:i + INSTRUCTION_SIZE], 'little'):016x}"
-        for i in range(0, len(data), INSTRUCTION_SIZE)
+        for i in range(HEADER_SIZE, len(data), INSTRUCTION_SIZE)
     ]
 
 
@@ -93,9 +99,12 @@ def check_normal():
             print(f"[PASS] {asm_file}")
             continue
 
-        # 食い違った命令を，命令の番号と64ビットの機械語で示す
+        # 食い違ったヘッダのワードを，ワードの番号と値で示す
         fail += 1
         print(f"[FAIL] {asm_file}")
+        if header_words_of(actual) != header_words_of(expected):
+            print(f"  header: expected {header_words_of(expected)} / actual {header_words_of(actual)}")
+        # 食い違った命令を，命令の番号と64ビットの機械語で示す
         actual_instructions = instructions_of(actual)
         expected_instructions = instructions_of(expected)
         for index in range(max(len(actual_instructions), len(expected_instructions))):

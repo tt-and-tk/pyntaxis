@@ -1,0 +1,8 @@
+; expect: asm syntax error: .reserve not found (required for executable)
+; 実行ファイルで.reserveを書かなかった → エラーになるべき
+; ROM用のアセンブリを実行ファイルへ変換した誤りを検出するため，実行ファイルでは.reserveを必須とする
+
+.global main
+
+main:
+    ret

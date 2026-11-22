@@ -1,0 +1,9 @@
+; expect: asm syntax error: instructions (8 bytes), reserved area (28408 bytes) and stack (4097 bytes) exceed area for executable (32512 bytes)
+; 命令列・命令列の直後に確保する範囲・スタックの合計が，実行ファイル用の範囲(32512バイト)を1バイト超えた → エラーになるべき
+
+.global main
+.reserve 28408
+.stack 4097
+
+main:
+    ret

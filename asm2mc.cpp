@@ -41,11 +41,15 @@ static std::string read_global_line(std::ifstream &asm_file);            // .glo
 static void get_function_names(                                          // プログラムに存在する関数の名前を取得する
     std::map<std::string, std::size_t> &functions, std::string line
 );
-static void assemble_body(                                               // 本体をアセンブルしfunctions/local_labels/instructionsを埋める
+static void assemble_body(                                               // 本体をアセンブルしdeclaration/functions/local_labels/instructionsを埋める
     std::ifstream &asm_file, const machine_writer &writer,
+    region_declaration_t &declaration,
     std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
     std::vector<instruction_t> &instructions
+);
+static bool read_region_declaration(                                     // .reserve・.stackの行なら内容をdeclarationへ記録してtrueを返す
+    const std::string &line, region_declaration_t &declaration
 );
 static instruction_t assemble_line(                                      // アセンブリ一行を命令にする
     const std::map<std::string, std::size_t> &functions, std::string line
@@ -261,6 +265,7 @@ void get_args(int argc, char **argv, args_t &args) {
 // アセンブリを機械語にし，出力先の形式で書き出す
 // 関数・局所ラベルは後ろで定義されたものも参照できるため，全ての行を命令にして参照を解決してから書き出す
 void assemble(std::ifstream &asm_file, machine_writer &writer) {
+    region_declaration_t declaration = {false, 0, false, 0};  // .reserve・.stackに書いた内容
     std::map<std::string, std::size_t> functions;     // 関数とその先頭index
     std::map<std::string, local_label_t> local_labels; // 局所ラベルとその位置・定義した関数
     std::vector<instruction_t> instructions;          // アセンブルした命令一覧(1要素=1命令)
@@ -274,8 +279,8 @@ void assemble(std::ifstream &asm_file, machine_writer &writer) {
         throw std::string("asm syntax error: main function not found");
     }
 
-    // 本体をアセンブルする(functions/local_labels の位置確定 + instructions 生成)
-    assemble_body(asm_file, writer, functions, local_labels, instructions);
+    // 本体をアセンブルする(declaration の読み取り + functions/local_labels の位置確定 + instructions 生成)
+    assemble_body(asm_file, writer, declaration, functions, local_labels, instructions);
 
     // .global で宣言された関数がすべて定義されているか確認する
     // indexがnposのまま残っていれば，宣言だけで定義(ラベル)がない関数
@@ -285,11 +290,14 @@ void assemble(std::ifstream &asm_file, machine_writer &writer) {
         }
     }
 
+    // 宣言が出力先で使えるか確かめる
+    writer.check_declaration(instructions.size(), declaration);
+
     // 関数・局所ラベルの参照を解決する(関数・jmpはPC，F系は相対オフセット)
     resolve_refs(instructions, functions, local_labels);
 
     // 命令列を出力先の形式で書き出す
-    writer.write_header(instructions.size());
+    writer.write_header(instructions.size(), declaration);
     for (const instruction_t &instruction : instructions) {
         writer.write_instruction(instruction);
     }
@@ -394,10 +402,11 @@ void get_function_names(
     }
 }
 
-// 本体をアセンブルしfunctions/local_labels/instructionsを埋める
+// 本体をアセンブルしdeclaration/functions/local_labels/instructionsを埋める
 // 命令の先頭からの位置は instructions のインデックスに対応する
 void assemble_body(
     std::ifstream &asm_file, const machine_writer &writer,
+    region_declaration_t &declaration,
     std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
     std::vector<instruction_t> &instructions
@@ -468,6 +477,9 @@ void assemble_body(
             continue;
         }
 
+        // 最初の関数ラベルより前の.reserve・.stackの行は，宣言として読む
+        if (current_function.empty() && read_region_declaration(line, declaration)) continue;
+
         // main関数の宣言前にコードがある
         if (functions["main"] == std::string::npos) {
             throw std::string("asm syntax error: not found main function");
@@ -506,6 +518,55 @@ void assemble_body(
     if (!current_function.empty() && !current_has_ret) {
         throw "asm syntax error: function without ret '" + current_function + "'";
     }
+}
+
+// .reserve・.stackの行なら内容をdeclarationへ記録してtrueを返し，それ以外の行ならfalseを返す
+// 書き方は「.reserve <数値>」の後に，省略できる「.stack <数値>」を続ける．数値は32ビットに収まる0以上の値に限る
+// lineは，最初の関数ラベルより前にある，空白以外の文字を含む行とする
+bool read_region_declaration(const std::string &line, region_declaration_t &declaration) {
+    const std::string code = strip_comment(line);   // コメントを除いた行
+
+    // 先頭の語(先頭の空白・タブを飛ばし，次の空白・タブの手前まで)を取り出す
+    const std::size_t head = std::min(code.find_first_not_of(" \t"), code.size());  // 先頭の語の開始位置
+    const std::string word = code.substr(head, code.find_first_of(" \t", head) - head);  // 先頭の語
+    if (word != ".reserve" && word != ".stack") return false;
+
+    // .global行と同じく，宣言は行頭から書く
+    if (head != 0) {
+        throw "asm syntax error: " + word + " must start at the beginning of the line '" + line + "'";
+    }
+    throw_if_tab(code);
+
+    // 宣言の後ろに，数値を1つだけ書く
+    const std::vector<std::string> args = split_args(code.substr(std::min(word.length() + 1, code.length())));  // 宣言に続く語
+    if (args.size() != 1 || !is_number_notation(args[0])) {
+        throw "asm syntax error: " + word + " takes one non-negative number '" + line + "'";
+    }
+    // ヘッダの1ワードに書くため，32ビットに収まる値に限る
+    // (notation2valueは64ビットを超える桁を捨てるため，値を求める前に，先頭の0を除いた桁数が32ビットの値の桁数以下かも確かめる)
+    const char last = args[0].back();                                                         // 基数接尾辞の候補
+    const std::size_t max_digits = (last == 'b') ? 32 : (last == 'o') ? 11 : (last == 'h') ? 8 : 10;  // 32ビットの値の最大の桁数
+    const std::string digits = (last == 'b' || last == 'o' || last == 'h') ? args[0].substr(0, args[0].length() - 1) : args[0];  // 桁の並び
+    const std::size_t significant = digits.length() - std::min(digits.find_first_not_of('0'), digits.length());  // 先頭の0を除いた桁数
+    const std::uint64_t value = (significant <= max_digits) ? notation2value(args[0]) : 0;   // 宣言した値
+    if (significant > max_digits || value > 0xFFFFFFFFULL) {
+        throw "asm syntax error: " + word + " value out of 32-bit range '" + line + "'";
+    }
+
+    // .reserveは1度だけ，.stackより前に書く
+    if (word == ".reserve") {
+        if (declaration.has_reserve) throw "asm syntax error: duplicated .reserve '" + line + "'";
+        if (declaration.has_stack) throw "asm syntax error: .reserve must precede .stack '" + line + "'";
+        declaration.has_reserve = true;
+        declaration.reserve_size = static_cast<std::uint32_t>(value);
+        return true;
+    }
+    // .stackは1度だけ，.reserveの後に書く
+    if (declaration.has_stack) throw "asm syntax error: duplicated .stack '" + line + "'";
+    if (!declaration.has_reserve) throw "asm syntax error: .stack must follow .reserve '" + line + "'";
+    declaration.has_stack = true;
+    declaration.stack_size = static_cast<std::uint32_t>(value);
+    return true;
 }
 
 // アセンブリ一行を命令にする(属する関数は呼び出し側が記録する)

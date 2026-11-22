@@ -1,0 +1,9 @@
+; expect: asm syntax error: duplicated .reserve '.reserve 8'
+; .reserveを2回書いた → エラーになるべき
+
+.global main
+.reserve 0
+.reserve 8
+
+main:
+    ret

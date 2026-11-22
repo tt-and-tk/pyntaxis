@@ -1,0 +1,9 @@
+; expect: asm syntax error: .reserve and .stack cannot be used for ROM
+; ROMへ出力するアセンブリに.reserveを書いた → エラーになるべき
+; ROMは領域を割り振られないため，実行ファイル用のアセンブリをROMへ変換した誤りとして検出する
+
+.global main
+.reserve 0
+
+main:
+    ret
