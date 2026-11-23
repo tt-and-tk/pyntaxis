@@ -1,0 +1,9 @@
+; 指令どうしの順序は問わない．.stack・.reserve・.globalの順に書いても出力できる
+; ヘッダの確保する範囲は8バイト，スタックの量は16バイトになる
+
+.stack 16
+.reserve 8
+.global main
+
+main:
+    ret

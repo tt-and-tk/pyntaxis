@@ -1,6 +1,6 @@
-; expect: asm syntax error: .global must start at the beginning of the line and be followed by a space '  .global main'
+; expect: asm syntax error: .global must start at the beginning of the line '  .global main'
 ; .globalの前に空白がある → エラーになるべき
-; .globalは行頭から書く
+; 指令は行頭から書く
 
   .global main
 

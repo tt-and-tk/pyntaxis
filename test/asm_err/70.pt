@@ -1,0 +1,8 @@
+; expect: asm syntax error: unknown directive '.data 0'
+; 指令に無い名前を，最初の関数ラベルより前に書いた → エラーになるべき
+
+.global main
+.data 0
+
+main:
+    ret

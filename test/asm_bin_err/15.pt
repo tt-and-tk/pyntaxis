@@ -1,6 +1,6 @@
 ; expect: asm syntax error: fail command '.reserve'
-; .reserveを関数ラベルの後に書いた → エラーになるべき
-; 宣言は.global行と最初の関数ラベルの間に書く
+; .reserveを関数ラベルの後に書いた → 命令として読み，エラーになるべき
+; 指令は最初の関数ラベルより前に書く
 
 .global main
 

@@ -1,6 +1,6 @@
-; expect: asm syntax error: .global must start at the beginning of the line and be followed by a space '.global,main'
-; .globalの直後がカンマ → エラーになるべき
-; .globalの直後は半角スペースで区切る
+; expect: asm syntax error: unknown directive '.global,main'
+; .globalの直後がカンマ → .global,mainという名前の指令として読み，エラーになるべき
+; 指令の名前と引数は半角スペースで区切る
 
 .global,main
 

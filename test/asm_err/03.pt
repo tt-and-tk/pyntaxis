@@ -1,7 +1,6 @@
-; expect: asm syntax error: code before .global '    add r0 r0 r0'
-; .global より前にコードがあるエラーテスト(異常系)
-; .global 宣言より前は空行とコメント行のみ許可される
-; 下の add 命令のようにコメント以外の記述があるとエラーになるべき
+; expect: asm syntax error: code before main function '    add r0 r0 r0'
+; 最初の関数ラベルより前に命令がある → エラーになるべき
+; 最初の関数ラベルより前には，空行・コメント行・指令だけを書ける
 
     add r0 r0 r0
 
