@@ -54,8 +54,9 @@ public:
     bool main_ret_halts() const override { return true; }
 
     // ROMは領域を割り振られないため，大きさの宣言を書いたらエラーにする
+    // (.stackは.reserveの後にだけ書けるため，.reserveの有無で判定する)
     void check_declaration(std::size_t, const region_declaration_t &declaration) const override {
-        if (declaration.has_reserve || declaration.has_stack) {
+        if (declaration.has_reserve) {
             throw std::string("asm syntax error: .reserve and .stack cannot be used for ROM");
         }
     }
@@ -146,7 +147,7 @@ public:
     static constexpr std::size_t REGION_SIZE = 32 * 1024;       // シェルが実行ファイルに割り振る領域の大きさ(バイト．どの実行ファイルにも同じ大きさを割り振る)
     static constexpr std::size_t ARGS_AREA_SIZE = 256;          // 領域の末尾のうち，シェルがコマンド名と引数を置くために取る大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
-    static constexpr std::uint32_t DEFAULT_STACK_SIZE = 4096;   // スタックの量が未定のときにシェルが割り振るスタックの量(バイト)
+    static constexpr std::uint32_t DEFAULT_STACK_SIZE = 4096;   // スタックの量が未定のときに，シェルが領域に収まるかを確かめるのに使うスタックの量(バイト)
     static constexpr std::uint32_t STACK_SIZE_UNSPECIFIED = 0xFFFFFFFF;  // ヘッダのスタックの量に書く，未定を表す値
     static constexpr unsigned char FORMAT_VERSION = 0;          // 実行ファイルの形式の版数(形式を変えたら上げ，シェルは対応する版数の実行ファイルだけを実行する)
 
@@ -158,7 +159,7 @@ public:
 
     // 命令列の直後に確保する範囲の大きさを宣言していなければエラーにする
     // 命令列・確保する範囲・スタックの合計が，領域のうち引数の置き場より手前に収まらなければエラーにする
-    // (スタックの量が未定なら，シェルが割り振る既定の量で確かめる)
+    // (スタックの量が未定なら，シェルと同じく既定の量で確かめる)
     void check_declaration(std::size_t instruction_num, const region_declaration_t &declaration) const override {
         if (!declaration.has_reserve) {
             throw std::string("asm syntax error: .reserve not found (required for executable)");

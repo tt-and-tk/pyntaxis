@@ -520,9 +520,9 @@ void assemble_body(
     }
 }
 
-// .reserve・.stackの行なら内容をdeclarationへ記録してtrueを返し，それ以外の行ならfalseを返す
+// 行が.reserve・.stackの宣言なら，内容を宣言の記録へ書き込んでtrueを返し，それ以外の行ならfalseを返す
 // 書き方は「.reserve <数値>」の後に，省略できる「.stack <数値>」を続ける．数値は32ビットに収まる0以上の値に限る
-// lineは，最初の関数ラベルより前にある，空白以外の文字を含む行とする
+// 渡す行は，最初の関数ラベルより前にある，空白以外の文字を含む行とする
 bool read_region_declaration(const std::string &line, region_declaration_t &declaration) {
     const std::string code = strip_comment(line);   // コメントを除いた行
 
@@ -539,24 +539,32 @@ bool read_region_declaration(const std::string &line, region_declaration_t &decl
 
     // 宣言の後ろに，数値を1つだけ書く
     const std::vector<std::string> args = split_args(code.substr(std::min(word.length() + 1, code.length())));  // 宣言に続く語
-    if (args.size() != 1 || !is_number_notation(args[0])) {
+    if (
+        // 宣言に続く語が1つでない
+        args.size() != 1
+        // または，その語が0以上の数値の表記でない
+        || !is_number_notation(args[0])) {
         throw "asm syntax error: " + word + " takes one non-negative number '" + line + "'";
     }
     // ヘッダの1ワードに書くため，32ビットに収まる値に限る
-    // (notation2valueは64ビットを超える桁を捨てるため，値を求める前に，先頭の0を除いた桁数が32ビットの値の桁数以下かも確かめる)
+    // (数値表記を値にする関数は64ビットを超える桁を捨てるため，値を求める前に，先頭の0を除いた桁数が32ビットの値の桁数以下かも確かめる)
     const char last = args[0].back();                                                         // 基数接尾辞の候補
     const std::size_t max_digits = (last == 'b') ? 32 : (last == 'o') ? 11 : (last == 'h') ? 8 : 10;  // 32ビットの値の最大の桁数
     const std::string digits = (last == 'b' || last == 'o' || last == 'h') ? args[0].substr(0, args[0].length() - 1) : args[0];  // 桁の並び
     const std::size_t significant = digits.length() - std::min(digits.find_first_not_of('0'), digits.length());  // 先頭の0を除いた桁数
     const std::uint64_t value = (significant <= max_digits) ? notation2value(args[0]) : 0;   // 宣言した値
-    if (significant > max_digits || value > 0xFFFFFFFFULL) {
+    if (
+        // 先頭の0を除いた桁数が，32ビットの値の最大の桁数を超える
+        significant > max_digits
+        // または，値が32ビットに収まらない
+        || value > 0xFFFFFFFFULL) {
         throw "asm syntax error: " + word + " value out of 32-bit range '" + line + "'";
     }
 
-    // .reserveは1度だけ，.stackより前に書く
+    // .reserveは1度だけ書く
+    // (.stackは.reserveの後にだけ書けるため，.stackの後に現れる.reserveも2度目の.reserveになる)
     if (word == ".reserve") {
         if (declaration.has_reserve) throw "asm syntax error: duplicated .reserve '" + line + "'";
-        if (declaration.has_stack) throw "asm syntax error: .reserve must precede .stack '" + line + "'";
         declaration.has_reserve = true;
         declaration.reserve_size = static_cast<std::uint32_t>(value);
         return true;
