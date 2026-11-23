@@ -1,0 +1,8 @@
+; expect: asm syntax error: .stack must follow .reserve '.stack 16'
+; .reserveを書かずに.stackだけを書いた → エラーになるべき
+
+.global main
+.stack 16
+
+main:
+    ret
