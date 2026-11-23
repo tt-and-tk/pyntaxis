@@ -2,6 +2,7 @@
 ; syscall: 0xA180000000000000，sysret: 0xA200000000000000，ret: 0xA100000000000000
 
 .global main
+.reserve 0
 
 main:
     syscall     ; index 0

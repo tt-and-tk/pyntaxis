@@ -5,8 +5,17 @@
 
 #include "asm2mc.hpp"
 
+// アセンブリの.reserve指令と.stack指令に書いた内容
+// どちらも実行ファイルが領域に必要とする大きさを表し，実行ファイルのヘッダに書く
+typedef struct {
+    bool has_reserve;            // .reserveを書いたか
+    std::uint32_t reserve_size;  // 命令列の直後に確保する範囲のバイト数(.reserveの値)
+    bool has_stack;              // .stackを書いたか(書かなければスタックの量は未定)
+    std::uint32_t stack_size;    // スタックの量のバイト数(.stackの値)
+} region_directives_t;
+
 // アセンブルした命令列の出力先
-// 出力先ごとに，命令数の上限・mainのretの扱い・出力の形式が異なる
+// 出力先ごとに，命令数の上限・mainのretの扱い・.reserve・.stack指令の扱い・出力の形式が異なる
 // 同じメソッドを順に呼べば，インスタンスの種類に応じた出力の内容が組み上がる
 class machine_writer {
 public:
@@ -14,7 +23,12 @@ public:
 
     virtual std::size_t max_instructions() const = 0;                     // 命令数の上限
     virtual bool main_ret_halts() const = 0;                              // mainのretを自分自身へのjmpに置き換えるか
-    virtual void write_header(std::size_t instruction_num) = 0;           // 命令列の前に置く内容を出力する
+    virtual void check_region_directives(                                 // .reserve・.stack指令がこの出力先で使えるかを確かめ，使えなければエラーにする
+        std::size_t instruction_num, const region_directives_t &region_directives
+    ) const = 0;
+    virtual void write_header(                                            // 命令列の前に置く内容を出力する
+        std::size_t instruction_num, const region_directives_t &region_directives
+    ) = 0;
     virtual void write_instruction(const instruction_t &instruction) = 0; // 命令一つを出力する
     virtual void write_footer() = 0;                                      // 命令列の後に置く内容を出力する
 
@@ -39,8 +53,15 @@ public:
     // mainは戻り先を持たないため，retをプログラムの終了(同じ命令を実行し続ける)に置き換える
     bool main_ret_halts() const override { return true; }
 
+    // ROMは領域を割り振られないため，.reserve・.stack指令を書いたらエラーにする
+    void check_region_directives(std::size_t, const region_directives_t &region_directives) const override {
+        if (region_directives.has_reserve || region_directives.has_stack) {
+            throw std::string("asm syntax error: .reserve and .stack cannot be used for ROM");
+        }
+    }
+
     // モジュールの宣言から，命令数のlocalparamと命令の配列の開始までを出力する
-    void write_header(std::size_t instruction_num) override {
+    void write_header(std::size_t instruction_num, const region_directives_t &) override {
         this->output += "`include \"rom.svh\"\n"
                         "`include \"machine.svh\"\n"
                         "\n"
@@ -115,13 +136,15 @@ private:
 };
 
 // Qosmosの実行ファイルの出力先
-// 実行ファイルはヘッダを持たず，命令を先頭から1命令8バイトずつ並べたもの
-// シェルはこれを，実行ファイルに割り振った領域の先頭へ書き写し，先頭の命令(領域の中のPC 0)からユーザーモードで実行する
+// 実行ファイルは，16バイトのヘッダの後に，命令を1命令8バイトずつ並べたもの
 class bin_writer : public machine_writer {
 public:
     static constexpr std::size_t REGION_SIZE = 32 * 1024;       // シェルが実行ファイルに割り振る領域の大きさ(バイト．どの実行ファイルにも同じ大きさを割り振る)
     static constexpr std::size_t ARGS_AREA_SIZE = 256;          // 領域の末尾のうち，シェルがコマンド名と引数を置くために取る大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
+    static constexpr std::uint32_t DEFAULT_STACK_SIZE = 4096;   // スタックの量が未定のときに，シェルが領域に収まるかを確かめるのに使うスタックの量(バイト)
+    static constexpr std::uint32_t STACK_SIZE_UNSPECIFIED = 0xFFFFFFFF;  // ヘッダのスタックの量に書く，未定を表す値
+    static constexpr unsigned char FORMAT_VERSION = 0;          // 実行ファイルの形式の版数(形式を変えたら上げ，シェルは対応する版数の実行ファイルだけを実行する)
 
     // 領域のうち，末尾のコマンド名と引数の置き場と重ならずに収まる命令数
     std::size_t max_instructions() const override { return (this->REGION_SIZE - this->ARGS_AREA_SIZE) / this->INSTRUCTION_SIZE; }
@@ -129,8 +152,42 @@ public:
     // 実行ファイルは終了をシステムコールでシェルへ伝え，mainのretには到達しない前提のため，retのまま残す
     bool main_ret_halts() const override { return false; }
 
-    // ヘッダを持たない
-    void write_header(std::size_t) override {}
+    // .reserve指令が無ければエラーにする
+    // 命令列・確保する範囲・スタックの合計が，領域のうち引数の置き場より手前に収まらなければエラーにする
+    // (スタックの量が未定なら，既定の量で確かめる)
+    void check_region_directives(std::size_t instruction_num, const region_directives_t &region_directives) const override {
+        if (!region_directives.has_reserve) {
+            throw std::string("asm syntax error: .reserve not found (required for executable)");
+        }
+
+        // 32ビットの値の合計で桁あふれしないよう，64ビットで足す
+        const std::uint64_t code_size = static_cast<std::uint64_t>(instruction_num) * this->INSTRUCTION_SIZE;  // 命令列のバイト数
+        const std::uint64_t stack_size = region_directives.has_stack ? region_directives.stack_size : this->DEFAULT_STACK_SIZE;  // 確かめるスタックの量
+        if (code_size + region_directives.reserve_size + stack_size > this->REGION_SIZE - this->ARGS_AREA_SIZE) {
+            throw "asm syntax error: instructions (" + std::to_string(code_size) + " bytes), reserved area ("
+                  + std::to_string(region_directives.reserve_size) + " bytes) and stack (" + std::to_string(stack_size)
+                  + " bytes) exceed area for executable (" + std::to_string(this->REGION_SIZE - this->ARGS_AREA_SIZE) + " bytes)";
+        }
+    }
+
+    // ヘッダの4つのワードを出力する
+    void write_header(std::size_t instruction_num, const region_directives_t &region_directives) override {
+        // ファイルシグネチャを，0x7F・'Q'・'S'・版数の順に出力する
+        // (0x7Fはテキストに現れないため，テキストファイルを実行ファイルと取り違えない)
+        this->output += static_cast<char>(0x7F);
+        this->output += 'Q';
+        this->output += 'S';
+        this->output += static_cast<char>(this->FORMAT_VERSION);
+
+        // 命令列のバイト数を出力する
+        this->write_word(static_cast<std::uint32_t>(instruction_num * this->INSTRUCTION_SIZE));
+
+        // 命令列の直後に確保する範囲のバイト数を出力する
+        this->write_word(region_directives.reserve_size);
+
+        // スタックの量を出力する(未定なら，未定を表す値を出力する)
+        this->write_word(region_directives.has_stack ? region_directives.stack_size : this->STACK_SIZE_UNSPECIFIED);
+    }
 
     // 命令を64ビットの機械語にし，下位のバイトから順に8バイトで出力する
     // imm[31:0]が先の4バイト，機械語の上位32ビットが後の4バイトになり，それぞれの中もリトルエンディアンになる
@@ -148,6 +205,13 @@ public:
     void write_footer() override {}
 
 private:
+    // 4バイトのワードを，下位のバイトから順に出力する
+    void write_word(std::uint32_t word) {
+        for (std::size_t byte = 0; byte < 4; byte++) {
+            this->output += static_cast<char>((word >> (byte * 8)) & 0xff);
+        }
+    }
+
     // 命令を {m_type(3), func(6), mask(4), rs1(6), rs2(6), rd(6), imm(33)} の64ビットに組み立てる
     std::uint64_t encode(const instruction_t &instruction) const {
         const command_t &command = commands.at(instruction.command);    // 命令の定義

@@ -1,0 +1,8 @@
+; expect: asm syntax error: .reserve value out of 32-bit range '.reserve 111111111111111111111111111111111b'
+; .reserveに，33桁の2進の値を書いた → エラーになるべき
+
+.global main
+.reserve 111111111111111111111111111111111b
+
+main:
+    ret

@@ -1,0 +1,9 @@
+; expect: asm syntax error: .reserve and .stack cannot be used for ROM
+; ROMへ出力するアセンブリに.reserveと.stackを両方書いた → エラーになるべき
+
+.global main
+.reserve 0
+.stack 0
+
+main:
+    ret

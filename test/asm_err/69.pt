@@ -1,0 +1,12 @@
+; expect: asm syntax error: duplicated .global '.global f'
+; .globalを2回書いた → エラーになるべき
+; 各指令は1回だけ書ける
+
+.global main
+.global f
+
+main:
+    ret
+
+f:
+    ret

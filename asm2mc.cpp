@@ -37,12 +37,19 @@ typedef struct {
 //  pn2mc.exeへのリンク時にコンパイラ側の同名シンボルとの衝突を避けるようすべてstaticにする)
 static void get_args(int argc, char **argv, args_t &args);                // コマンドライン引数を取得
 static void assemble(std::ifstream &asm_file, machine_writer &writer);    // アセンブリを機械語にし，出力先の形式で書き出す
-static std::string read_global_line(std::ifstream &asm_file);            // .global行まで読み飛ばし，コメントを除いて返す
-static void get_function_names(                                          // プログラムに存在する関数の名前を取得する
-    std::map<std::string, std::size_t> &functions, std::string line
+static std::size_t read_directives(                                      // 最初の関数ラベルより前の指令を読み，functions/region_directivesを埋める
+    const std::vector<std::string> &lines,
+    std::map<std::string, std::size_t> &functions,
+    region_directives_t &region_directives
+);
+static void get_function_names(                                          // .global指令に挙げた関数の名前を取得する
+    std::map<std::string, std::size_t> &functions, const std::string &names, const std::string &line
+);
+static std::uint32_t read_size_argument(                                 // .reserve・.stack指令の引数の値を返す
+    const std::string &word, const std::string &arguments, const std::string &line
 );
 static void assemble_body(                                               // 本体をアセンブルしfunctions/local_labels/instructionsを埋める
-    std::ifstream &asm_file, const machine_writer &writer,
+    const std::vector<std::string> &lines, std::size_t body_begin, const machine_writer &writer,
     std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
     std::vector<instruction_t> &instructions
@@ -261,21 +268,22 @@ void get_args(int argc, char **argv, args_t &args) {
 // アセンブリを機械語にし，出力先の形式で書き出す
 // 関数・局所ラベルは後ろで定義されたものも参照できるため，全ての行を命令にして参照を解決してから書き出す
 void assemble(std::ifstream &asm_file, machine_writer &writer) {
+    std::vector<std::string> lines;                   // アセンブリの全ての行
+    region_directives_t region_directives = {false, 0, false, 0};  // .reserve・.stack指令に書いた内容
     std::map<std::string, std::size_t> functions;     // 関数とその先頭index
     std::map<std::string, local_label_t> local_labels; // 局所ラベルとその位置・定義した関数
     std::vector<instruction_t> instructions;          // アセンブルした命令一覧(1要素=1命令)
 
-    // .global 行を取得し，宣言された関数名を読み込む
-    std::string global_line = read_global_line(asm_file);
-    get_function_names(functions, global_line);
-
-    // main関数が指定されていなければ
-    if (functions.find("main") == functions.end()) {
-        throw std::string("asm syntax error: main function not found");
+    // アセンブリを1行ずつ読み込む
+    for (std::string line; getline(asm_file, line);) {
+        lines.push_back(line);
     }
 
+    // 指令を読み，関数名と領域の大きさを記録する
+    const std::size_t body_begin = read_directives(lines, functions, region_directives);  // 最初の関数ラベルの行の位置
+
     // 本体をアセンブルする(functions/local_labels の位置確定 + instructions 生成)
-    assemble_body(asm_file, writer, functions, local_labels, instructions);
+    assemble_body(lines, body_begin, writer, functions, local_labels, instructions);
 
     // .global で宣言された関数がすべて定義されているか確認する
     // indexがnposのまま残っていれば，宣言だけで定義(ラベル)がない関数
@@ -285,68 +293,90 @@ void assemble(std::ifstream &asm_file, machine_writer &writer) {
         }
     }
 
+    // .reserve・.stack指令が出力先で使えるか確かめる
+    writer.check_region_directives(instructions.size(), region_directives);
+
     // 関数・局所ラベルの参照を解決する(関数・jmpはPC，F系は相対オフセット)
     resolve_refs(instructions, functions, local_labels);
 
     // 命令列を出力先の形式で書き出す
-    writer.write_header(instructions.size());
+    writer.write_header(instructions.size(), region_directives);
     for (const instruction_t &instruction : instructions) {
         writer.write_instruction(instruction);
     }
     writer.write_footer();
 }
 
-// .global行まで読み飛ばし，コメントを除いて返す
-// .global より前は空行とコメント行(;)のみ許可し，それ以外はエラーにする
-std::string read_global_line(std::ifstream &asm_file) {
-    std::string line;
-    while (getline(asm_file, line)) {
+// 最初の関数ラベルより前の指令を読み，.global指令の関数名をfunctionsへ，.reserve・.stack指令の値をregion_directivesへ記録する
+// 最初の関数ラベルより前には，空行・コメント行・指令だけを書ける．各指令は1回だけ書け，指令どうしの順序は問わない
+// 戻り値は，最初のラベルの行の位置(ラベルが無ければ行数)
+std::size_t read_directives(
+    const std::vector<std::string> &lines,
+    std::map<std::string, std::size_t> &functions,
+    region_directives_t &region_directives
+) {
+    bool has_global = false;    // .global指令を書いたか
+    std::size_t index = 0;      // 読んでいる行の位置
+
+    // 最初のラベルの行の手前まで，1行ずつ指令として読む
+    for (; index < lines.size(); index++) {
+        const std::string &line = lines[index];         // 読んでいる行
         const std::string code = strip_comment(line);   // コメントを除いた行
 
-        // .global 行が見つかったら(タブ非対応を確認して)コメントを除いた行を返す
-        if (strncmp(".global ", code.c_str(), strlen(".global ")) == 0) {
-            throw_if_tab(code);
-            return code;
-        }
-
         // 空行・コメント行は読み飛ばす
-        if (ltrim(code).empty()) {
-            continue;
-        }
+        if (ltrim(code).empty()) continue;
 
-        // 先頭の語(先頭の空白・タブを飛ばし，次の空白・タブ・カンマの手前まで)を取り出す
-        // 空白・タブのみの行では head が行末になり，空文字列になる
+        // ラベルの行(コメントより前に':'を含む行)から本体が始まる
+        if (code.find(':') != std::string::npos) break;
+
+        // 先頭の語(先頭の空白・タブを飛ばし，次の空白・タブの手前まで)を取り出す
         const std::size_t head = std::min(code.find_first_not_of(" \t"), code.size());  // 先頭の語の開始位置
-        const std::string word = code.substr(head, code.find_first_of(" \t,", head) - head);  // 先頭の語
+        const std::string word = code.substr(head, code.find_first_of(" \t", head) - head);  // 先頭の語
 
-        // 先頭の語が .global の行は，.global 行の書き方を誤ったものとして原因が分かるエラーにする
-        // 例: `  .global main`(行頭に空白)・`.global;x`(直後がコメント)・`.global<タブ>main`・`.global,main`
-        // 語単位で比べるのは，.globalx のような別の語を .global 行と誤認しないため
-        if (word == ".global") {
-            throw "asm syntax error: .global must start at the beginning of the line and be followed by a space '" + line + "'";
+        // '.'で始まらない語は命令とみなし，関数の外にあるためエラーにする
+        if (word[0] != '.') {
+            throw "asm syntax error: code before main function '" + line + "'";
         }
+        // 指令は行頭から書き，タブを含まない
+        if (head != 0) {
+            throw "asm syntax error: " + word + " must start at the beginning of the line '" + line + "'";
+        }
+        throw_if_tab(code);
 
-        // それ以外(`  mov ...` や `.globalx` のように先頭の語が .global でない行)は .global より前のコードとしてエラー
-        throw "asm syntax error: code before .global '" + line + "'";
+        // 指令の名前ごとに，名前に続く引数を読む
+        const std::string arguments = code.substr(std::min(word.length() + 1, code.length()));  // 指令の名前に続く引数
+        if (word == ".global") {
+            if (has_global) throw "asm syntax error: duplicated .global '" + line + "'";
+            has_global = true;
+            get_function_names(functions, arguments, line);
+        } else if (word == ".reserve") {
+            if (region_directives.has_reserve) throw "asm syntax error: duplicated .reserve '" + line + "'";
+            region_directives.has_reserve = true;
+            region_directives.reserve_size = read_size_argument(word, arguments, line);
+        } else if (word == ".stack") {
+            if (region_directives.has_stack) throw "asm syntax error: duplicated .stack '" + line + "'";
+            region_directives.has_stack = true;
+            region_directives.stack_size = read_size_argument(word, arguments, line);
+        } else {
+            throw "asm syntax error: unknown directive '" + line + "'";
+        }
     }
 
-    // .global 宣言が無いままEOFに達した
-    throw std::string("asm syntax error: .global not found");
+    // .global指令は必須で，mainを挙げる
+    if (!has_global) {
+        throw std::string("asm syntax error: .global not found");
+    }
+    if (functions.find("main") == functions.end()) {
+        throw std::string("asm syntax error: main function not found");
+    }
+    return index;
 }
 
-// プログラムに存在する関数の名前を取得する
+// .global指令に挙げた関数の名前を取得する
+// namesは指令の名前に続く引数，lineはエラーメッセージで示す行全体
 void get_function_names(
-    std::map<std::string, std::size_t> &functions, std::string line
+    std::map<std::string, std::size_t> &functions, const std::string &names, const std::string &line
 ) {
-    // 関数指定が正しくなければ
-    if (strncmp(".global ", line.c_str(), strlen(".global ")) != 0) {
-        throw std::string("asm syntax error: .global fail");
-    }
-
-    // 関数の羅列部分を取得
-    // lineを上書きしないのは，エラーメッセージで.globalを含む行全体を示すため
-    const std::string names = line.substr(strlen(".global "));
-
     // 関数名一覧を取得(カンマで区切った各要素を関数名とする)
     std::size_t begin = 0;      // 現在の要素の先頭位置
     while (true) {
@@ -394,23 +424,23 @@ void get_function_names(
     }
 }
 
-// 本体をアセンブルしfunctions/local_labels/instructionsを埋める
+// 本体(最初のラベルの行から最後の行まで)をアセンブルしfunctions/local_labels/instructionsを埋める
 // 命令の先頭からの位置は instructions のインデックスに対応する
 void assemble_body(
-    std::ifstream &asm_file, const machine_writer &writer,
+    const std::vector<std::string> &lines, std::size_t body_begin, const machine_writer &writer,
     std::map<std::string, std::size_t> &functions,
     std::map<std::string, local_label_t> &local_labels,
     std::vector<instruction_t> &instructions
 ) {
-    std::string line;                       // アセンブリファイルの一文
     std::string current_function;           // 現在変換中の関数名
     bool current_has_ret = false;           // 現在の関数が ret を含むか
 
-    while (getline(asm_file, line)) {
+    for (std::size_t index = body_begin; index < lines.size(); index++) {
+        const std::string &line = lines[index];     // アセンブリファイルの一文
         // コメントを除いた部分(コメント内のコロンをラベルと誤認しないため)
         const std::string code = strip_comment(line);
 
-        // 空行・空白のみの行・コメント行はスキップ(main宣言前のコードとして扱わないため)
+        // 空行・空白のみの行・コメント行はスキップ
         const std::string trimmed = ltrim(code);
         if (trimmed.empty()) continue;
 
@@ -418,7 +448,7 @@ void assemble_body(
         std::size_t colon_index = code.find_first_of(':');
         if (colon_index != std::string::npos) {
             // 空白・タブでインデントしたラベルなら，それらがラベル名に残り別名の未定義エラーになるため，原因が分かるエラーにする
-            // インデントを取り除いて受け付けないのは，.global行と同じく宣言は行頭・命令はインデントという書き分けに揃えるため
+            // インデントを取り除いて受け付けないのは，指令と同じくラベルは行頭・命令はインデントという書き分けに揃えるため
             if (code[0] == ' ' || code[0] == '\t') {
                 throw "asm syntax error: label must start at the beginning of the line '" + line + "'";
             }
@@ -468,11 +498,6 @@ void assemble_body(
             continue;
         }
 
-        // main関数の宣言前にコードがある
-        if (functions["main"] == std::string::npos) {
-            throw std::string("asm syntax error: not found main function");
-        }
-
         // 現在の関数が ret を含むか記録する
         std::string command = trimmed.substr(0, str_find_first_of(trimmed, ' '));
         if (command == "ret") current_has_ret = true;
@@ -506,6 +531,37 @@ void assemble_body(
     if (!current_function.empty() && !current_has_ret) {
         throw "asm syntax error: function without ret '" + current_function + "'";
     }
+}
+
+// .reserve・.stack指令の引数の値を返す
+// 引数は，32ビットに収まる0以上の数値1つに限る(ヘッダの1ワードに書くため)
+// wordは指令の名前，argumentsは名前に続く引数，lineはエラーメッセージで示す行全体
+std::uint32_t read_size_argument(const std::string &word, const std::string &arguments, const std::string &line) {
+    // 引数が数値1つであるか確かめる
+    const std::vector<std::string> args = split_args(arguments);  // 引数の語
+    if (
+        // 引数の語が1つでない
+        args.size() != 1
+        // または，その語が0以上の数値の表記でない
+        || !is_number_notation(args[0])) {
+        throw "asm syntax error: " + word + " takes one non-negative number '" + line + "'";
+    }
+
+    // 値が32ビットに収まるか確かめる
+    // (数値表記を値にする関数は64ビットを超える桁を捨てるため，値を求める前に，先頭の0を除いた桁数が32ビットの値の桁数以下かも確かめる)
+    const char last = args[0].back();                                                         // 基数接尾辞の候補
+    const std::size_t max_digits = (last == 'b') ? 32 : (last == 'o') ? 11 : (last == 'h') ? 8 : 10;  // 32ビットの値の最大の桁数
+    const std::string digits = (last == 'b' || last == 'o' || last == 'h') ? args[0].substr(0, args[0].length() - 1) : args[0];  // 桁の並び
+    const std::size_t significant = digits.length() - std::min(digits.find_first_not_of('0'), digits.length());  // 先頭の0を除いた桁数
+    const std::uint64_t value = (significant <= max_digits) ? notation2value(args[0]) : 0;   // 引数の値
+    if (
+        // 先頭の0を除いた桁数が，32ビットの値の最大の桁数を超える
+        significant > max_digits
+        // または，値が32ビットに収まらない
+        || value > 0xFFFFFFFFULL) {
+        throw "asm syntax error: " + word + " value out of 32-bit range '" + line + "'";
+    }
+    return static_cast<std::uint32_t>(value);
 }
 
 // アセンブリ一行を命令にする(属する関数は呼び出し側が記録する)

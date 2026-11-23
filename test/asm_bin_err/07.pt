@@ -1,0 +1,8 @@
+; expect: asm syntax error: .reserve takes one non-negative number '.reserve'
+; .reserveに数値を書かなかった → エラーになるべき
+
+.global main
+.reserve
+
+main:
+    ret

@@ -1,0 +1,9 @@
+; expect: asm syntax error: tab character is not supported '.reserve	0'
+; .reserveと数値の間をタブで区切った → エラーになるべき
+; アセンブラはタブに対応しない
+
+.global main
+.reserve	0
+
+main:
+    ret
