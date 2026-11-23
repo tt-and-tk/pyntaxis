@@ -1,6 +1,7 @@
 *.exe
 review*.md
 draft*.md
+prompt*.md
 test/sv/
 test/bin/
 .claude/settings.local.json
