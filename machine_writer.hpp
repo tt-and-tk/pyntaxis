@@ -139,21 +139,21 @@ private:
 // 実行ファイルは，16バイトのヘッダの後に，命令を1命令8バイトずつ並べたもの
 class bin_writer : public machine_writer {
 public:
-    static constexpr std::size_t REGION_SIZE = 32 * 1024;       // シェルが実行ファイルに割り振る領域の大きさ(バイト．どの実行ファイルにも同じ大きさを割り振る)
-    static constexpr std::size_t ARGS_AREA_SIZE = 256;          // 領域の末尾のうち，シェルがコマンド名と引数を置くために取る大きさ(バイト)
+    static constexpr std::size_t REGION_MAX_SIZE = 96 * 1024;   // Qosmosが割り振れる最も大きい領域の大きさ(バイト．Qosmosが領域を割り振るメモリの範囲の全体)
+    static constexpr std::size_t ARGS_AREA_SIZE = 256;          // 領域の末尾のうち，Qosmosがコマンド名と引数を置くために取る大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
-    static constexpr std::uint32_t DEFAULT_STACK_SIZE = 4096;   // スタックの量が未定のときに，シェルが領域に収まるかを確かめるのに使うスタックの量(バイト)
+    static constexpr std::uint32_t DEFAULT_STACK_SIZE = 4096;   // スタックの量が未定のときに，Qosmosが割り振るスタックの量(バイト．領域に収まるかもこの量で確かめる)
     static constexpr std::uint32_t STACK_SIZE_UNSPECIFIED = 0xFFFFFFFF;  // ヘッダのスタックの量に書く，未定を表す値
-    static constexpr unsigned char FORMAT_VERSION = 0;          // 実行ファイルの形式の版数(形式を変えたら上げ，シェルは対応する版数の実行ファイルだけを実行する)
+    static constexpr unsigned char FORMAT_VERSION = 0;          // 実行ファイルの形式の版数(形式を変えたら上げ，Qosmosは対応する版数の実行ファイルだけを実行する)
 
-    // 領域のうち，末尾のコマンド名と引数の置き場と重ならずに収まる命令数
-    std::size_t max_instructions() const override { return (this->REGION_SIZE - this->ARGS_AREA_SIZE) / this->INSTRUCTION_SIZE; }
+    // 最も大きい領域のうち，末尾のコマンド名と引数の置き場と重ならずに収まる命令数
+    std::size_t max_instructions() const override { return (this->REGION_MAX_SIZE - this->ARGS_AREA_SIZE) / this->INSTRUCTION_SIZE; }
 
-    // 実行ファイルは終了をシステムコールでシェルへ伝え，mainのretには到達しない前提のため，retのまま残す
+    // 実行ファイルは終了をシステムコールでQosmosへ伝え，mainのretには到達しない前提のため，retのまま残す
     bool main_ret_halts() const override { return false; }
 
     // .reserve指令が無ければエラーにする
-    // 命令列・確保する範囲・スタックの合計が，領域のうち引数の置き場より手前に収まらなければエラーにする
+    // 命令列・確保する範囲・スタックの合計が，最も大きい領域のうち引数の置き場より手前に収まらなければエラーにする
     // (スタックの量が未定なら，既定の量で確かめる)
     void check_region_directives(std::size_t instruction_num, const region_directives_t &region_directives) const override {
         if (!region_directives.has_reserve) {
@@ -163,10 +163,10 @@ public:
         // 32ビットの値の合計で桁あふれしないよう，64ビットで足す
         const std::uint64_t code_size = static_cast<std::uint64_t>(instruction_num) * this->INSTRUCTION_SIZE;  // 命令列のバイト数
         const std::uint64_t stack_size = region_directives.has_stack ? region_directives.stack_size : this->DEFAULT_STACK_SIZE;  // 確かめるスタックの量
-        if (code_size + region_directives.reserve_size + stack_size > this->REGION_SIZE - this->ARGS_AREA_SIZE) {
+        if (code_size + region_directives.reserve_size + stack_size > this->REGION_MAX_SIZE - this->ARGS_AREA_SIZE) {
             throw "asm syntax error: instructions (" + std::to_string(code_size) + " bytes), reserved area ("
                   + std::to_string(region_directives.reserve_size) + " bytes) and stack (" + std::to_string(stack_size)
-                  + " bytes) exceed area for executable (" + std::to_string(this->REGION_SIZE - this->ARGS_AREA_SIZE) + " bytes)";
+                  + " bytes) exceed area for executable (" + std::to_string(this->REGION_MAX_SIZE - this->ARGS_AREA_SIZE) + " bytes)";
         }
     }
 
