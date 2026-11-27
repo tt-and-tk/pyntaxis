@@ -142,14 +142,14 @@ public:
     static constexpr std::size_t REGION_MAX_SIZE = 96 * 1024;   // Qosmosが割り振れる最も大きい領域の大きさ(バイト．Qosmosが領域を割り振るメモリの範囲の全体)
     static constexpr std::size_t ARGS_AREA_SIZE = 256;          // 領域の末尾のうち，Qosmosがコマンド名と引数を置くために取る大きさ(バイト)
     static constexpr std::size_t INSTRUCTION_SIZE = 8;          // 1命令の大きさ(バイト)
-    static constexpr std::uint32_t DEFAULT_STACK_SIZE = 4096;   // スタックの量が未定のときに，Qosmosが割り振るスタックの量(バイト．領域に収まるかもこの量で確かめる)
+    static constexpr std::uint32_t DEFAULT_STACK_SIZE = 4096;   // スタックの量が未定のときに，Qosmosが割り振るスタックの量(バイト．アセンブラも，最も大きい領域に収まるかをこの量で確かめる)
     static constexpr std::uint32_t STACK_SIZE_UNSPECIFIED = 0xFFFFFFFF;  // ヘッダのスタックの量に書く，未定を表す値
-    static constexpr unsigned char FORMAT_VERSION = 0;          // 実行ファイルの形式の版数(形式を変えたら上げ，Qosmosは対応する版数の実行ファイルだけを実行する)
+    static constexpr unsigned char FORMAT_VERSION = 0;          // 実行ファイルの形式の版数(形式を変えたら上げる．Qosmosは対応する版数の実行ファイルだけを実行する)
 
     // 最も大きい領域のうち，末尾のコマンド名と引数の置き場と重ならずに収まる命令数
     std::size_t max_instructions() const override { return (this->REGION_MAX_SIZE - this->ARGS_AREA_SIZE) / this->INSTRUCTION_SIZE; }
 
-    // 実行ファイルは終了をシステムコールでQosmosへ伝え，mainのretには到達しない前提のため，retのまま残す
+    // 実行ファイルは終了をシステムコールでQosmosへ伝え，mainのretには到達しないため，アセンブラはretを書き換えずに残す
     bool main_ret_halts() const override { return false; }
 
     // .reserve指令が無ければエラーにする
