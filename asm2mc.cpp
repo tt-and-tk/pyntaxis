@@ -511,7 +511,7 @@ void assemble_body(
         // ROMではmainをCALLできず戻り先が無いため，main内のretはすべてプログラムの終了を表す
         // 自分自身へのjmp(無限ループ)に置き換えて，どの経路でmainを抜けても同じ終了状態にする
         // 先頭から最初に現れるretだけを置き換える方式は，早期returnがあると末尾のretが残るため採用しない
-        // 実行ファイルでは，プログラムの終了をQosmosのシステムコールで伝えるため，retは置き換えない
+        // 実行ファイルでは，プロセスが終了をQosmosのシステムコールで伝えるため，retは置き換えない
         if (writer.main_ret_halts() && current_function == "main" && command == "ret") {
             const std::size_t pc = instructions.size() - 1;    // このretのPC
             instructions.back().command = "jmp";
