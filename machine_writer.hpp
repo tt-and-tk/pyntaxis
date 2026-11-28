@@ -149,7 +149,7 @@ public:
     // 最も大きい領域のうち，末尾のコマンド名と引数の置き場と重ならずに収まる命令数
     std::size_t max_instructions() const override { return (this->REGION_MAX_SIZE - this->ARGS_AREA_SIZE) / this->INSTRUCTION_SIZE; }
 
-    // 実行ファイルは終了をシステムコールでQosmosへ伝え，mainのretには到達しないため，アセンブラはretを書き換えずに残す
+    // プロセスは終了をシステムコールでQosmosへ伝え，mainのretには到達しないため，アセンブラはretを書き換えずに残す
     bool main_ret_halts() const override { return false; }
 
     // .reserve指令が無ければエラーにする
