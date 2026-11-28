@@ -1,8 +1,8 @@
-; expect: asm syntax error: instructions (8 bytes), reserved area (28409 bytes) and stack (4096 bytes) exceed area for executable (32512 bytes)
-; .stackを省略し，既定のスタックの量(4096バイト)で確かめた合計が，実行ファイル用の範囲(32512バイト)を1バイト超えた → エラーになるべき
+; expect: asm syntax error: instructions (8 bytes), reserved area (93945 bytes) and stack (4096 bytes) exceed area for executable (98048 bytes)
+; .stackを省略し，既定のスタックの量(4096バイト)で確かめた合計が，実行ファイル用の範囲(98048バイト)を1バイト超えた → エラーになるべき
 
 .global main
-.reserve 28409
+.reserve 93945
 
 main:
     ret
